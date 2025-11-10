@@ -1,0 +1,16 @@
+# Database
+psycopg2-binary>=2.9.0
+asyncpg>=0.28.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.7.0
+rich>=13.0.0
+
+# Future: Praval integration
+# praval[all]>=0.7.11

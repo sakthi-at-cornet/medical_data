@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: fact_production_quality
+    description: Daily production quality facts with dimensional references
+    columns:
+      - name: quality_key
+        description: Surrogate key for this fact
+        tests:
+          - unique
+          - not_null
+
+      - name: date_key
+        description: Foreign key to dim_date
+        tests:
+          - not_null
+
+      - name: component_type
+        description: Type of component (refills/bodies/springs)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['refills', 'bodies', 'springs']
+
+      - name: total_units
+        description: Total units produced
+        tests:
+          - not_null
+
+      - name: pass_rate
+        description: Pass rate percentage
+        tests:
+          - not_null
+
+  - name: agg_component_quality_trends
+    description: Quality trends over time by component
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "pass_rate >= 0 and pass_rate <= 100"
+
+  - name: agg_material_performance
+    description: Performance analysis by material type
+    columns:
+      - name: material
+        description: Material type
+        tests:
+          - unique
+          - not_null
+
+      - name: pass_rate
+        description: Overall pass rate for this material
+        tests:
+          - not_null

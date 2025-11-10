@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: stg_refills_production
+    description: Cleaned and standardized refills production data
+    columns:
+      - name: id
+        description: Unique identifier from source
+        tests:
+          - unique
+          - not_null
+
+      - name: production_timestamp
+        description: When the unit was produced
+        tests:
+          - not_null
+
+      - name: quality_flag
+        description: Binary quality indicator (1=pass, 0=fail)
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: viscosity_category
+        description: Categorized viscosity (low/medium/high)
+        tests:
+          - accepted_values:
+              values: ['low', 'medium', 'high']
+
+  - name: stg_bodies_production
+    description: Cleaned and standardized bodies production data
+    columns:
+      - name: id
+        tests:
+          - unique
+          - not_null
+
+      - name: production_timestamp
+        tests:
+          - not_null
+
+      - name: quality_flag
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: material
+        description: Body material type
+        tests:
+          - accepted_values:
+              values: ['plastic', 'bamboo', 'metal']
+
+  - name: stg_springs_production
+    description: Cleaned and standardized springs production data
+    columns:
+      - name: id
+        tests:
+          - unique
+          - not_null
+
+      - name: production_timestamp
+        tests:
+          - not_null
+
+      - name: quality_flag
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: strength_category
+        tests:
+          - accepted_values:
+              values: ['low', 'medium', 'high']

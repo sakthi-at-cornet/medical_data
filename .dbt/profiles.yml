@@ -1,0 +1,12 @@
+praval_mds:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: postgres-warehouse
+      port: 5432
+      user: warehouse_user
+      password: warehouse_pass
+      dbname: warehouse
+      schema: staging_staging
+      threads: 4

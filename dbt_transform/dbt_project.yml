@@ -1,0 +1,50 @@
+# dbt project configuration
+
+name: 'praval_mds'
+version: '1.0.0'
+config-version: 2
+
+# Project profile
+profile: 'praval_mds'
+
+# Paths
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Model configurations
+models:
+  praval_mds:
+    # Staging models (raw → cleaned)
+    staging:
+      +materialized: view
+      +schema: staging
+
+    # Intermediate models (business logic)
+    intermediate:
+      +materialized: view
+      +schema: staging
+
+    # Mart models (dimensional)
+    marts:
+      +materialized: table
+      +schema: marts
+
+# Seeds configuration
+seeds:
+  praval_mds:
+    +schema: seeds
+
+# Test configuration
+tests:
+  praval_mds:
+    +store_failures: true
+    +schema: test_failures
