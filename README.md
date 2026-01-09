@@ -1,19 +1,19 @@
-# Praval Manufacturing Analytics System
+# Praval Medical Radiology Analytics System
 
-AI-powered analytics platform for automotive press manufacturing, built on [Praval](https://pravalagents.com) - an event-driven multi-agent framework. The system uses 5 specialized AI agents that collaborate through Praval's Reef/Spore architecture to answer natural language questions about production metrics, quality trends, and manufacturing performance.
+AI-powered analytics platform for medical radiology audits, built on [Praval](https://pravalagents.com) - an event-driven multi-agent framework. The system uses 5 specialized AI agents that collaborate through Praval's Reef/Spore architecture to answer natural language questions about radiology quality scores, turnaround times, and radiologist performance.
 
 ## What This Project Demonstrates
 
-- **Multi-Agent AI Architecture**: 5 agents (Manufacturing Advisor, Analytics Specialist, Visualization Specialist, Quality Inspector, Report Writer) working together without central orchestration
+- **Multi-Agent AI Architecture**: 5 agents (Domain Expert, Analytics Specialist, Visualization Specialist, Quality Inspector, Report Writer) working together without central orchestration
 - **Event-Driven Communication**: Agents communicate through Praval's Spore messages, enabling parallel execution and graceful degradation
-- **Manufacturing Domain Intelligence**: Deep understanding of press shop terminology, OEE calculations, defect analysis, and die management
+- **Medical Domain Intelligence**: Deep understanding of radiology terminology (CAT ratings, modalities), quality metrics, and audit workflows
 - **End-to-End Data Pipeline**: Source databases → EL Pipeline → dbt transformations → Cube.js semantic layer → AI agents → Frontend
 
 ## Quick Start (6 Steps)
 
 ### Prerequisites
 - Docker Desktop (running)
-- OpenAI API key
+- OpenAI/Groq API key
 
 ### Step 1: Clone and Configure
 
@@ -26,10 +26,7 @@ cd praval_mds_analytics
 cp .env.example .env
 ```
 
-Edit `.env` and add your OpenAI API key:
-```bash
-OPENAI_API_KEY=sk-your-key-here
-```
+Edit `.env` and add your API keys.
 
 ### Step 2: Start the System
 
@@ -37,7 +34,7 @@ OPENAI_API_KEY=sk-your-key-here
 # Start all services (takes ~2 minutes for databases to initialize)
 docker-compose up -d
 
-# Verify all 10 services are running
+# Verify all services are running
 docker-compose ps
 ```
 
@@ -75,11 +72,11 @@ curl http://localhost:8000/agents
 
 In the frontend chat (http://localhost:3000), try these queries:
 
-- "What's the OEE for each press line?"
-- "Compare Door_Outer_Left vs Door_Outer_Right by defect type"
-- "Show me quality trends over the last 30 days"
-- "Which shift has the best performance?"
-- "What are the main defect types for bonnet panels?"
+- "What is the average quality score by modality?"
+- "Compare CT vs MRI safety scores"
+- "Show me the trend of CAT5 cases over the last month"
+- "Which body part category has the lowest quality rating?"
+- "Analyze radiologist performance for Neuro studies"
 
 ---
 
@@ -102,10 +99,8 @@ AI Agents (Praval) → Frontend (Next.js)
 |---------|------|---------|
 | analytics-agents | 8000 | FastAPI + Praval 5-agent system |
 | analytics-frontend | 3000 | Next.js chat UI |
-| cubejs | 4000 | Semantic layer (3 cubes) |
-| postgres-press-line-a | 5436 | Door panel production (2,160 records) |
-| postgres-press-line-b | 5437 | Bonnet panel production (2,160 records) |
-| postgres-die-management | 5438 | Die data (4 dies + assessments) |
+| cubejs | 4000 | Semantic layer (Radiology Cube) |
+| postgres-medical | 5432 | Medical Metrics Database |
 | postgres-warehouse | 5435 | Data warehouse |
 | airflow-webserver | 8080 | Orchestration UI |
 
@@ -117,12 +112,12 @@ The system uses 5 specialized agents built on [Praval](https://pravalagents.com)
 #### Agent Pipeline
 
 ```
-User Query → Manufacturing Advisor → Analytics Specialist → [Visualization + Quality] → Report Writer → Response
+User Query → Domain Expert → Analytics Specialist → [Visualization + Quality] → Report Writer → Response
 ```
 
 | Agent | Responds To | Broadcasts | Purpose |
 |-------|-------------|------------|---------|
-| **Manufacturing Advisor** | `user_query` | `domain_enriched_request` | Domain expertise, terminology mapping |
+| **Domain Expert** | `user_query` | `domain_enriched_request` | Medical terminology mapping, intent classification |
 | **Analytics Specialist** | `domain_enriched_request` | `data_ready` | Query translation, Cube.js execution |
 | **Visualization Specialist** | `data_ready` | `chart_ready` | Chart type selection, Chart.js specs |
 | **Quality Inspector** | `data_ready` | `insights_ready` | Anomaly detection, root cause analysis |
@@ -131,7 +126,7 @@ User Query → Manufacturing Advisor → Analytics Specialist → [Visualization
 #### How It Works
 
 1. **User Query**: FastAPI receives a natural language question and broadcasts a `user_query` Spore
-2. **Domain Enrichment**: Manufacturing Advisor maps user terms to domain entities (e.g., "doors" → Door_Outer_Left, Door_Outer_Right)
+2. **Domain Enrichment**: Domain Expert maps user terms to medical entities (e.g., "head scan" → CT/MRI Brain)
 3. **Query Execution**: Analytics Specialist translates to Cube.js query and executes against the semantic layer
 4. **Parallel Processing**: Visualization Specialist and Quality Inspector run simultaneously on the data
 5. **Response Composition**: Report Writer waits for both agents, then composes a narrative with chart and insights
@@ -142,26 +137,23 @@ User Query → Manufacturing Advisor → Analytics Specialist → [Visualization
 - **Parallel Execution**: Visualization + Quality agents run simultaneously for faster response
 - **Session Correlation**: Report Writer uses `session_id` to match chart and insights from the same query
 - **Graceful Degradation**: System works even if one agent fails (e.g., returns chart without insights)
-- **LLM Integration**: Each agent uses GPT-4o-mini for its specific domain task
+- **LLM Integration**: Each agent uses Groq/OpenAI for its specific domain task
 
 See [docs/AGENT_ARCHITECTURE.md](docs/AGENT_ARCHITECTURE.md) for detailed implementation and Spore schemas.
 
 ### Data Model
 
-**Press Lines:**
-- **Line A (800T)**: Door outer panels (Left/Right) - 90 days of hourly data
-- **Line B (1200T)**: Bonnet outer panels - 90 days of hourly data
+**Medical Data:**
+- **Radiology Audits**: Detailed audit logs including Modality, Body Part, Quality Score (0-100), Safety Score, and CAT Ratings.
 
 **Key Metrics:**
-- OEE (Availability × Performance × Quality Rate)
-- Defect rates by type (springback, burr, surface scratch, etc.)
-- Cycle time, tonnage, material costs
-- Shift and operator performance
+- **Quality Score**: Composite score of report accuracy and clarity.
+- **Safety Score**: Metric focused on patient safety and critical findings.
+- **CAT Rating**: Peer review category (CAT1=Good, CAT5=Severe Discrepancy).
+- **Turnaround Time (TAT)**: Assignment to Report generation time.
 
 **Cube.js Semantic Layer:**
-- `PressOperations`: Production-level data with full traceability
-- `PartFamilyPerformance`: Aggregated performance by part type
-- `PressLineUtilization`: Line capacity and shift analysis
+- `RadiologyAudits`: Comprehensive cube covering all audit metrics and dimensions.
 
 ---
 
@@ -229,7 +221,7 @@ docker-compose down -v && docker-compose up -d
 docker-compose ps
 
 # Check if data was loaded
-docker exec postgres-press-line-a psql -U press_a_user -d press_line_a -c "SELECT COUNT(*) FROM press_line_a_production"
+docker exec postgres-medical psql -U medical_user -d medical_metrics -c "SELECT COUNT(*) FROM medical.radiology_audits"
 ```
 
 ### Agents API not responding
@@ -291,7 +283,7 @@ lsof -i :8000
 
 - [Data Architecture](docs/DATA_ARCHITECTURE.md) - End-to-end system architecture (source DBs, dbt, Cube.js, Airflow, agents)
 - [Agent Architecture](docs/AGENT_ARCHITECTURE.md) - Detailed Praval multi-agent implementation and Spore schemas
-- [Automotive Dataset](docs/AUTOMOTIVE_DATASET.md) - Dataset specification and use cases
+- [Medical Data Schema](docs/MEDICAL_DATA_SCHEMA.md) - Dataset specification and use cases
 
 ---
 
