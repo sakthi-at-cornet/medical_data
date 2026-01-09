@@ -24,9 +24,12 @@ class VisualizationSpecialistAgent:
 
     def __init__(self):
         """Initialize the Visualization Specialist Agent."""
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self.model = settings.openai_model
-        logger.info("Visualization Specialist Agent initialized")
+        self.client = AsyncOpenAI(
+            api_key=settings.groq_api_key,
+            base_url=settings.groq_base_url
+        )
+        self.model = settings.groq_model
+        logger.info("Visualization Specialist Agent initialized with Groq/Kimi K2")
 
     async def determine_chart_type(
         self,
@@ -186,8 +189,9 @@ Guidelines:
             return {"type": "empty", "message": "No data"}
 
         row = data[0]
-        # Get first measure value
-        measure_key = self._get_measure_key(row, measures)
+        # Get first measure value - pass the first measure string, not the entire list
+        first_measure = measures[0] if measures else ""
+        measure_key = self._get_measure_key(row, first_measure)
         value = row.get(measure_key, 0)
 
         return {

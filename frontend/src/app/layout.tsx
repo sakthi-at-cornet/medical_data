@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Praval Agentic Analytics',
-  description: 'AI-powered analytics for automotive press manufacturing',
+  title: 'Praval Medical Analytics',
+  description: 'AI-powered analytics for radiology audits and quality metrics',
 };
 
 export default function RootLayout({

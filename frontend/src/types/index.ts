@@ -10,10 +10,11 @@ export interface ChatMessage {
 
 export interface ChartData {
   chart_type: 'bar' | 'line' | 'table';
-  data: Array<Record<string, any>>;
+  data: Array<Record<string, any>> | { labels: string[]; datasets: any[] };
   x_axis?: string;
   y_axis?: string;
   title?: string;
+  options?: any; // Chart.js options from backend
 }
 
 export interface ChatResponse {

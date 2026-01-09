@@ -56,9 +56,12 @@ class ReportWriterAgent:
 
     def __init__(self):
         """Initialize the Report Writer Agent."""
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self.model = settings.openai_model
-        logger.info("Report Writer Agent initialized")
+        self.client = AsyncOpenAI(
+            api_key=settings.groq_api_key,
+            base_url=settings.groq_base_url
+        )
+        self.model = settings.groq_model
+        logger.info("Report Writer Agent initialized with Groq/Kimi K2")
 
     async def compose_narrative(
         self,
@@ -82,7 +85,8 @@ class ReportWriterAgent:
         root_causes = insights.get("root_causes", [])
 
         # Build narrative prompt
-        prompt = f"""You are a technical writer creating a data narrative for manufacturing analytics.
+        # Build narrative prompt
+        prompt = f"""You are a medical data analyst creating a data narrative for radiology audits.
 
 Chart Type: {chart_spec.get('type', 'unknown')}
 Number of Data Points: {len(chart_spec.get('data', {}).get('labels', []))}
@@ -100,27 +104,27 @@ Root Causes ({len(root_causes)}):
 Compose a clear, actionable narrative following this structure:
 
 🔍 Key Findings:
-• [3-5 bullet points highlighting the most important observations]
+• [3-5 bullet points highlighting the most important observations from the data]
 • Use specific numbers and percentages
-• Focus on comparisons and trends
+• Focus on comparisons, trends, and quality differences
 
 🔧 Root Causes:
-• [2-3 bullet points explaining WHY these patterns exist]
-• Connect to manufacturing factors (die wear, material, operator, etc.)
-• Only include if root causes were identified
+• [2-3 bullet points explaining WHY these patterns exist, based strictly on the data]
+• Connect to radiology factors (modality complexity, radiologist expertise, scan types, etc.)
+• Only include if root causes were identified in the data
 
 💡 Recommended Actions:
-• [2-3 bullet points with specific next steps]
-• Prioritize immediate vs long-term actions
-• Be concrete and actionable
+• [2-3 bullet points with specific next steps for the radiology department]
+• Be concrete and actionable (e.g., "Review training for X scan type", "Audit high-volume radiologists")
 
 Guidelines:
-- Use clear, professional language
-- Avoid jargon overload
+- Use clear, professional medical/technical language
+- ABSOLUTELY NO manufacturing terminology (no "die wear", "press line", "material grade", "OEE", etc.)
+- Focus on: Quality Scores, Safety Scores, Turnaround Times (TAT), CAT Ratings, Radiologist Performance, Modalities
 - Start with the most important findings
-- Include context (e.g., "28% fewer defects" not just "36 defects")
+- Include context (e.g., "12% higher error rate" not just "5 errors")
 - Be concise (3-5 sentences per section)
-- Skip sections if no relevant insights (e.g., skip Root Causes if none identified)
+- Skip sections if no relevant insights
 
 Respond with ONLY the narrative text (no JSON, no extra formatting).
 """
@@ -239,7 +243,7 @@ Respond with ONLY the narrative text (no JSON, no extra formatting).
 
         context = "\n".join(context_parts)
 
-        prompt = f"""You are helping users explore manufacturing analytics data. Based on the current analysis, suggest 3 logical follow-up questions.
+        prompt = f"""You are helping users explore medical radiology audit data. Based on the current analysis, suggest 3 logical follow-up questions.
 
 Current Analysis:
 {context}
@@ -247,23 +251,29 @@ Current Analysis:
 Narrative shown to user:
 {narrative}
 
-Available data includes:
-- OEE, quality metrics, defect analysis
-- Part families: Door_Outer_Left, Door_Outer_Right, Bonnet_Outer
-- Press lines: LINE_A, LINE_B
-- Dimensions: shift, die, operator, material grade, time
+Available data includes (448 audit records):
+- Quality Scores, Safety Scores, Star Ratings (numeric metrics)
+- CAT Ratings (CAT1-CAT5 final output) - AVAILABLE
+- Modalities: CT (233), MRI (214) - AVAILABLE
+- Gender: Male (197), Female (251) - AVAILABLE
+- Body Part Category: NEURO, SPINE, ABDOMEN/PELVIS, etc. - AVAILABLE
+- Sub-specialty: Neuro, Body, MSK, etc. - AVAILABLE
+- Age: Patient ages (126 under 25, 322 over 25) - AVAILABLE
+- NOTE: Radiologist names are NOT available in this dataset
 
 Generate 3 specific, actionable follow-up questions that:
-1. Drill deeper into findings (e.g., if defects found, suggest breaking down by shift)
-2. Explore related metrics (e.g., if showing quality, suggest cost analysis)
-3. Investigate root causes (e.g., if material issue suspected, suggest supplier comparison)
+1. Drill deeper into findings (e.g., if showing modality, suggest body part breakdown)
+2. Explore related metrics (e.g., if showing quality, suggest safety score or CAT rating)
+3. Investigate demographics (e.g., compare by gender or age group)
+
+IMPORTANT: Do NOT suggest radiologist-related questions as that data is not available.
 
 Respond with JSON:
 {{
     "follow_ups": ["question 1", "question 2", "question 3"]
 }}
 
-Make questions natural and specific to the current analysis. Don't be generic."""
+Make questions natural and specific to the current analysis."""
 
         try:
             response = await self.client.chat.completions.create(
@@ -279,11 +289,11 @@ Make questions natural and specific to the current analysis. Don't be generic.""
 
         except Exception as e:
             logger.error(f"Error generating follow-ups: {e}")
-            # Fallback to generic suggestions
+            # Fallback to generic suggestions that work with available data
             return [
-                "Show me OEE trends over the past month",
-                "Compare defect rates across different shifts",
-                "What's the cost breakdown by part family?"
+                "Compare quality scores between CT and MRI",
+                "Show the CAT rating distribution",
+                "How many male vs female patients?"
             ]
 
     def _create_fallback_narrative(
@@ -319,7 +329,7 @@ Make questions natural and specific to the current analysis. Don't be generic.""
 @agent(
     "report_writer",
     responds_to=["chart_ready", "insights_ready"],
-    system_message="You are a technical writer creating clear, actionable data narratives for manufacturing analytics.",
+    system_message="You are a medical technical writer creating clear, actionable data narratives for radiology analytics.",
     auto_broadcast=False
 )
 def report_writer_handler(spore: Spore):
@@ -380,11 +390,11 @@ def report_writer_handler(spore: Spore):
             rejection_reason = session["insights"].get("rejection_reason", "Query out of scope")
             final_response = {
                 "type": "final_response_ready",
-                "narrative": f"I can only answer questions about automotive press manufacturing data. {rejection_reason}\n\nPlease ask about:\n• Production metrics (OEE, quality, defects, costs)\n• Press line performance\n• Part family analysis\n• Shift comparisons\n• Trends over time",
+                "narrative": f"I can only answer questions about medical radiology audit data. {rejection_reason}\n\nPlease ask about:\n• Quality Metrics (Quality Scores, Safety Scores, Star Ratings)\n• CAT Ratings (CAT1-CAT5)\n• Radiologist Performance\n• Modality Analysis (CT, MRI)\n• Turnaround Times",
                 "chart_spec": None,
                 "follow_ups": [
-                    "What's the OEE for each press line?",
-                    "Show me quality metrics by part family"
+                    "What's the average quality score by modality?",
+                    "Show me the CAT rating distribution"
                 ],
                 "session_id": session_id,
             }

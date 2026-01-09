@@ -39,10 +39,10 @@ export const RightSidebar: React.FC = () => {
       description: 'Data Warehouse',
     },
     {
-      name: 'Source Systems',
+      name: 'Medical Data',
       status: 'checking',
-      icon: '🔌',
-      description: '3 Source Databases',
+      icon: '🏥',
+      description: 'Radiology Audit Database',
     },
   ]);
 

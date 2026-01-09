@@ -11,10 +11,10 @@ interface MessageWithExtras extends ChatMessageType {
 }
 
 const EXAMPLE_QUESTIONS = [
-  "What's the OEE for each press line?",
-  "Which part family has the best quality?",
-  "Show me defect trends over time",
-  "Compare shift performance",
+  "Compare quality scores between CT and MRI",
+  "How many male and female patients?",
+  "What is the CAT rating distribution?",
+  "Show quality scores by body part category",
 ];
 
 export const ChatInterface: React.FC = () => {
@@ -101,12 +101,12 @@ export const ChatInterface: React.FC = () => {
           <div className="header-left">
             <img
               src="/praval_agentic_analytics.png"
-              alt="Praval Agentic Analytics"
+              alt="Praval Medical Analytics"
               className="main-logo"
             />
             <div className="header-text">
-              <h1>Praval Agentic Analytics</h1>
-              <p>Ask questions about press operations, OEE, part quality, and shift performance</p>
+              <h1>Praval Medical Analytics</h1>
+              <p>Ask questions about radiology audits, quality scores, CAT ratings, and performance metrics</p>
             </div>
           </div>
           <img
@@ -120,7 +120,7 @@ export const ChatInterface: React.FC = () => {
       <div className="messages-container">
         {messages.length === 0 && (
           <div className="welcome-message">
-            <h2>Welcome to Praval Agentic Analytics</h2>
+            <h2>Welcome to Praval Medical Analytics</h2>
             <p>Try asking:</p>
             <div className="example-questions">
               {EXAMPLE_QUESTIONS.map((question, idx) => (
@@ -174,7 +174,7 @@ export const ChatInterface: React.FC = () => {
         <input
           type="text"
           className="chat-input"
-          placeholder="Ask a question about production data..."
+          placeholder="Ask a question about radiology audit data..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}

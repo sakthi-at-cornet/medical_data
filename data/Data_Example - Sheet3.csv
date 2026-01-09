@@ -1,0 +1,25 @@
+QUESTION NO,ACTUAL QUESTION,0,1,2,3,4,5
+1,The referral is interpretable,100,0,25,50,75,100
+2,The clinical history included is relevant,0,0,25,50,75,100
+3,The clinical question is clearly understood,0,0,25,50,75,100
+4,The images are of diagnostic quality,100,0,25,50,75,100
+5,Extra images should have been provided,100,100,75,50,25,0
+6,Relevant prior images are available for comparison,100,0,25,50,75,100
+7,Procedure technique details are appropriate for examination (if mentioned),0,0,25,50,75,100
+8,The examination is of sufficient quality to answer the clinical question,0,0,25,50,75,100
+9,Relevant previous imaging was referenced in the report,100,0,25,50,75,100
+10,Important findings are appropriately highlighted,100,0,25,50,75,100
+11,"Where necessary, appropriate differential diagnosis has been included in the report",100,0,25,50,75,100
+12,The conclusion of the report is adequate,0,0,25,50,75,100
+13,"Where relevant, recommendations for further appropriate imaging has been made",100,0,25,50,75,100
+14,"Where relevant, recommendations for further clinical management has been made",100,0,25,50,75,100
+15,Important findings are appropriately communicated,100,0,25,50,75,100
+16,The report is free of language errors,0,0,25,50,75,100
+17,FINAL CAT 1-5,,0,50,75,90,100
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,Specific question- please note change in order of the questions,These are the final responses and weightage that each response should have for the calculation of the final score,,,,,

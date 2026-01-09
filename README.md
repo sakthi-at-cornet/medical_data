@@ -109,6 +109,7 @@ AI Agents (Praval) → Frontend (Next.js)
 | postgres-warehouse | 5435 | Data warehouse |
 | airflow-webserver | 8080 | Orchestration UI |
 
+
 ### AI Agents (Praval Framework)
 
 The system uses 5 specialized agents built on [Praval](https://pravalagents.com), an event-driven multi-agent framework. Agents communicate through Praval's Reef/Spore architecture - Spores are JSON messages that flow between agents without central orchestration.

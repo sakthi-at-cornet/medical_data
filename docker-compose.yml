@@ -1,69 +1,5 @@
-version: '3.8'
 
 services:
-  # Automotive Press Line A: Door Outer Panels (800T Press)
-  postgres-press-line-a:
-    image: postgres:15
-    container_name: postgres-press-line-a
-    environment:
-      POSTGRES_DB: press_line_a
-      POSTGRES_USER: press_a_user
-      POSTGRES_PASSWORD: press_a_pass
-    ports:
-      - "5436:5432"
-    volumes:
-      - ./docker/postgres/press-line-a/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - postgres-press-line-a-data:/var/lib/postgresql/data
-    networks:
-      - mds-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U press_a_user -d press_line_a"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Automotive Press Line B: Bonnet Outer Panels (1200T Press)
-  postgres-press-line-b:
-    image: postgres:15
-    container_name: postgres-press-line-b
-    environment:
-      POSTGRES_DB: press_line_b
-      POSTGRES_USER: press_b_user
-      POSTGRES_PASSWORD: press_b_pass
-    ports:
-      - "5437:5432"
-    volumes:
-      - ./docker/postgres/press-line-b/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - postgres-press-line-b-data:/var/lib/postgresql/data
-    networks:
-      - mds-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U press_b_user -d press_line_b"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Die Management System
-  postgres-die-management:
-    image: postgres:15
-    container_name: postgres-die-management
-    environment:
-      POSTGRES_DB: die_management
-      POSTGRES_USER: die_mgmt_user
-      POSTGRES_PASSWORD: die_mgmt_pass
-    ports:
-      - "5438:5432"
-    volumes:
-      - ./docker/postgres/die-management/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - postgres-die-management-data:/var/lib/postgresql/data
-    networks:
-      - mds-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U die_mgmt_user -d die_management"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Data Warehouse
   postgres-warehouse:
     image: postgres:15
@@ -76,6 +12,7 @@ services:
       - "5435:5432"
     volumes:
       - ./docker/postgres/warehouse/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/postgres/warehouse/medical_init.sql:/docker-entrypoint-initdb.d/medical_init.sql
       - postgres-warehouse-data:/var/lib/postgresql/data
     networks:
       - mds-network
@@ -219,10 +156,13 @@ services:
       cubejs:
         condition: service_started
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=${GROQ_MODEL:-moonshotai/Kimi-K2-Instruct-0905}
+      - GROQ_BASE_URL=https://api.groq.com/openai/v1
+      - OPENAI_API_KEY=${GROQ_API_KEY}
+      - OPENAI_BASE_URL=https://api.groq.com/openai/v1
       - CUBEJS_API_URL=http://cubejs:4000/cubejs-api/v1
       - CUBEJS_API_SECRET=mysecretkey1234567890abcdefghijkl
-      - OPENAI_MODEL=gpt-4o-mini
       - LOG_LEVEL=INFO
     ports:
       - "8000:8000"

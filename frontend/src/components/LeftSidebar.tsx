@@ -12,19 +12,19 @@ interface Dataset {
 
 const datasets: Dataset[] = [
   {
-    name: 'PressOperations',
-    description: 'Production-level press data with traceability',
-    icon: '🏭',
+    name: 'RadiologyAudits',
+    description: 'Quality audit data for CT & MRI imaging reports',
+    icon: '🩻',
   },
   {
-    name: 'PartFamilyPerformance',
-    description: 'Door vs Bonnet performance metrics',
-    icon: '🚗',
+    name: 'Quality Metrics',
+    description: 'CAT ratings, Star scores, Safety & Quality scores',
+    icon: '⭐',
   },
   {
-    name: 'PressLineUtilization',
-    description: 'Line capacity & shift analysis',
-    icon: '⚙️',
+    name: 'Performance Analytics',
+    description: 'Radiologist & Reviewer performance metrics',
+    icon: '📊',
   },
 ];
 

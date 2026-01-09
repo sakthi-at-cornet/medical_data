@@ -1,0 +1,13 @@
+views:
+  - name: active_radiology_view
+    cubes:
+      - join_path: RadiologyAudits
+        includes:
+          - count
+          - avgQualityScore
+          - avgSafetyScore
+          - cat5Count
+          - modality
+          - bodyPartCategory
+          - finalOutput
+          - reportDateTime

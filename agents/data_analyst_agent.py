@@ -19,65 +19,41 @@ class DataAnalystAgent:
 
         # Domain knowledge: Available cubes and their measures/dimensions
         self.schema_context = """
-Automotive Press Manufacturing Analytics Schema:
+Medical Radiology Analytics Schema:
 
-1. PressOperations Cube (fact_press_operations):
-   - Measures: count, passedCount, failedCount, passRate, avgOee, avgAvailability, avgPerformance, avgQualityRate,
-              avgTonnage, avgCycleTime, avgStrokeRate, totalCost, avgCostPerPart, avgMaterialCost, avgLaborCost,
-              avgEnergyCost, avgSurfaceDeviation, defectCount, reworkCount
-   - Dimensions: partFamily (Door_Outer_Left, Door_Outer_Right, Bonnet_Outer), pressLineId, lineName, dieId,
-                partType (Door/Bonnet), materialGrade (CRS_SPCC, HSLA_350, DP600), coilId, shiftId, operatorId,
-                qualityStatus, defectType, defectSeverity, tonnageCategory, oeeCategory, productionDate, isWeekend
-   - Use for: Production-level analysis, OEE breakdown, defect analysis, shift comparison, die/coil traceability
+1. RadiologyAudits Cube (fact_radiology_audits):
+   - Measures: 
+     * count: Total number of audits
+     * avgQualityScore: Average Quality Score (0-100)
+     * avgSafetyScore: Average Safety Score (0-100)
+     * avgProductivityScore: Average Productivity Score
+     * avgEfficiencyScore: Average Efficiency Score
+     * avgStarScore: Average Star Score
+     * avgStarRating: Average Star Rating (1-5)
+     * cat5Count: Count of CAT5 (Severe) cases
+     * cat4Count: Count of CAT4 (Major) cases
+     * cat3Count: Count of CAT3 (Moderate) cases
+     * cat2Count: Count of CAT2 (Minor) cases
+     * cat1Count: Count of CAT1 (Good) cases
+     * avgAge: Average patient age
+   
+   - Dimensions: 
+     * modality: CT, MRI
+     * subSpecialty: Neuroradiology, MSK, Body, etc.
+     * bodyPartCategory: Brain, Spine, Chest, Abdomen, etc.
+     * bodyPart: Specific body part
+     * originalRadiologist: Name of reporting radiologist
+     * reviewer: Name of reviewing radiologist
+     * finalOutput: CAT1, CAT2, CAT3, CAT4, CAT5
+     * starRating: 1, 2, 3, 4, 5
+     * gender: Male, Female
+     * ageCohort: Adult, Pediatric, Geriatric
+     * scanType: Specific type of scan
+     * instituteName: Name of the hospital/clinic
+     * scanDate: Date of scan
+     * reportDate: Date of report
 
-2. PartFamilyPerformance Cube (agg_part_family_performance):
-   - Measures: totalPartsProduced, partsPassed, partsFailed, firstPassYield, reworkRate, uniqueDefectTypes,
-              avgOee, avgAvailability, avgPerformance, avgQualityRate, avgTonnage, avgCycleTime,
-              avgCostPerPart, totalProductionCost, avgMaterialCost, avgLaborCost, avgCoilDefectRate,
-              avgMaterialYieldStrength, avgMaterialTensileStrength, productionDays
-   - Dimensions: partFamily, partType (Door/Bonnet), materialGrade
-   - Use for: Part family comparison (Door Left vs Door Right vs Bonnet), material grade performance,
-             first pass yield analysis, cost per part optimization
-
-3. PressLineUtilization Cube (agg_press_line_utilization):
-   - Measures: totalPartsProduced, totalPartsPassed, totalPartsFailed, avgPassRate, overallAvgOee,
-              overallAvgAvailability, overallAvgPerformance, overallAvgQualityRate, avgTonnage, avgCycleTime,
-              totalCost, avgCostPerUnit, totalProductionDays, totalBatches, totalOperatorShifts, totalDefects,
-              totalRework, weekendParts, weekdayParts, weekendProductionPct, morningShiftParts, afternoonShiftParts,
-              nightShiftParts, utilizationRate
-   - Dimensions: pressLineId, lineName (LINE_A/LINE_B), partType
-   - Use for: Press line capacity planning, shift utilization, weekend vs weekday analysis,
-             Line A (800T) vs Line B (1200T) comparison
-
-Automotive Manufacturing Domain:
-- OEE (Overall Equipment Effectiveness) = Availability × Performance × Quality Rate
-- Availability: Uptime / Planned production time
-- Performance: Actual output / Target output (at design cycle time)
-- Quality Rate: Good parts / Total parts produced
-- SMED: Single-Minute Exchange of Die (changeover time)
-- Tonnage: Press force (Line A: 600-650T, Line B: 900-1100T)
-- Cycle Time: Time per part (Line A: 1.2-1.5s, Line B: 1.5-2.0s)
-- Defect Types: Springback, Wrinkling, Necking, Splitting, Surface Defects, Dimensional Variation
-- Material Grades: CRS_SPCC (cold rolled steel), HSLA_350 (high-strength low-alloy), DP600 (dual-phase steel)
-- Part Types: Door outer panels (LEFT/RIGHT on Line A), Bonnet outer panel (Line B)
-
-Query Patterns:
-- "OEE" or "efficiency" → use avgOee, avgAvailability, avgPerformance, avgQualityRate
-- "pass rate" or "quality" → use passRate or avgPassRate
-- "by part" or "which part" → use PressOperations.partFamily or PartFamilyPerformance.partFamily
-- "by line" or "press line" → use PressLineUtilization.lineName or PressOperations.pressLineId
-- "by shift" → use PressOperations.shiftId dimension
-- "defect" or "failure" → use defectCount, defectType, defectSeverity
-- "cost" → use avgCostPerPart, totalCost, avgMaterialCost, avgLaborCost
-- "tonnage" → use avgTonnage measure
-- "cycle time" or "speed" → use avgCycleTime or avgStrokeRate
-- "material" or "coil" → use materialGrade dimension or coilId for traceability
-- "die" → use dieId dimension
-- "over time" or "trends" → use productionDate timeDimension
-- "weekend" or "weekday" → use isWeekend dimension or weekendParts/weekdayParts measures
-- "shift analysis" → use morningShiftParts, afternoonShiftParts, nightShiftParts
-- "best" or "highest" → add order desc
-- "worst" or "lowest" → add order asc
+   - Use for: Quality analysis, radiologist performance (scores, TAT), modality comparisons, demographic analysis
 """
 
     async def translate_to_query(self, user_question: str, context: str = "") -> tuple[CubeQuery, str]:
@@ -87,79 +63,82 @@ Query Patterns:
         Returns:
             Tuple of (CubeQuery, chart_type)
         """
-        system_prompt = f"""You are a data analyst for a manufacturing analytics system.
+        system_prompt = f"""You are a data analyst for a medical radiology analytics system.
 Your job is to translate user questions into Cube.js queries.
 
 {self.schema_context}
 
 Chart Type Selection:
-- "bar": Use for comparisons (component vs component, material vs material)
-- "line": Use for time-series data (trends over time, hourly/daily changes)
+- "bar": Use for comparisons (modality vs modality, category vs category)
+- "line": Use for time-series data (trends over time)
 - "table": Use for detailed data, multiple metrics, or when uncertain
+- "kpi": Use for single aggregate numbers
 
 Respond with a JSON object containing:
 - "query": A Cube.js query object with measures, dimensions, filters, timeDimensions, order, limit
-- "chart_type": One of "bar", "line", or "table"
+- "chart_type": One of "bar", "line", "table", "kpi"
 - "reasoning": Brief explanation of the query
 
 Example Responses:
 
-1. Part family comparison query:
+1. Modality comparison query:
 {{
   "query": {{
-    "measures": ["PartFamilyPerformance.totalPartsProduced", "PartFamilyPerformance.firstPassYield", "PartFamilyPerformance.avgCostPerPart"],
-    "dimensions": ["PartFamilyPerformance.partFamily"]
+    "measures": ["RadiologyAudits.avgQualityScore", "RadiologyAudits.avgSafetyScore", "RadiologyAudits.count"],
+    "dimensions": ["RadiologyAudits.modality"]
   }},
   "chart_type": "bar",
-  "reasoning": "Comparing part families (Door Left/Right vs Bonnet) by production volume, yield, and cost"
+  "reasoning": "Comparing quality and safety scores between CT and MRI"
 }}
 
-2. OEE breakdown by press line:
+2. CAT Rating distribution:
 {{
   "query": {{
-    "measures": ["PressLineUtilization.overallAvgOee", "PressLineUtilization.overallAvgAvailability", "PressLineUtilization.overallAvgPerformance", "PressLineUtilization.overallAvgQualityRate"],
-    "dimensions": ["PressLineUtilization.lineName"]
+    "measures": ["RadiologyAudits.count"],
+    "dimensions": ["RadiologyAudits.finalOutput"],
+    "order": {{
+      "RadiologyAudits.count": "desc"
+    }}
   }},
   "chart_type": "bar",
-  "reasoning": "Showing OEE components breakdown for Line A vs Line B"
+  "reasoning": "Showing distribution of cases by CAT rating"
 }}
 
-3. Time-series quality trends:
+3. Quality trend over time:
 {{
   "query": {{
-    "measures": ["PressOperations.passRate", "PressOperations.avgOee"],
-    "dimensions": ["PressOperations.partFamily"],
+    "measures": ["RadiologyAudits.avgQualityScore"],
     "timeDimensions": [{{
-      "dimension": "PressOperations.productionDate",
+      "dimension": "RadiologyAudits.reportDate",
       "granularity": "day"
     }}]
   }},
   "chart_type": "line",
-  "reasoning": "Showing daily quality and OEE trends by part family"
+  "reasoning": "Showing daily trend of average quality score"
 }}
 
-4. Shift performance analysis:
+4. Radiologist performance analysis:
 {{
   "query": {{
-    "measures": ["PressLineUtilization.morningShiftParts", "PressLineUtilization.afternoonShiftParts", "PressLineUtilization.nightShiftParts"],
-    "dimensions": ["PressLineUtilization.lineName"]
-  }},
-  "chart_type": "bar",
-  "reasoning": "Comparing shift productivity across press lines"
-}}
-
-5. Defect analysis:
-{{
-  "query": {{
-    "measures": ["PressOperations.defectCount", "PressOperations.reworkCount"],
-    "dimensions": ["PressOperations.defectType"],
+    "measures": ["RadiologyAudits.avgQualityScore", "RadiologyAudits.cat5Count", "RadiologyAudits.count"],
+    "dimensions": ["RadiologyAudits.originalRadiologist"],
     "order": {{
-      "PressOperations.defectCount": "desc"
+      "RadiologyAudits.avgQualityScore": "asc"
     }},
     "limit": 10
   }},
+  "chart_type": "table",
+  "reasoning": "List of radiologists ordered by lowest quality score to identify training needs"
+}}
+
+5. Body part analysis:
+{{
+  "query": {{
+    "measures": ["RadiologyAudits.avgQualityScore", "RadiologyAudits.count"],
+    "dimensions": ["RadiologyAudits.bodyPartCategory"]
+  }},
   "chart_type": "bar",
-  "reasoning": "Top 10 defect types by frequency with rework count"
+  "reasoning": "Quality score comparison by body part category"
 }}"""
 
         user_prompt = f"""Question: {user_question}
@@ -193,8 +172,8 @@ Generate the Cube.js query and chart type."""
             logger.error(f"Error translating query: {str(e)}")
             # Fallback to default query
             return CubeQuery(
-                measures=["PartFamilyPerformance.totalPartsProduced", "PartFamilyPerformance.firstPassYield"],
-                dimensions=["PartFamilyPerformance.partFamily"]
+                measures=["RadiologyAudits.count", "RadiologyAudits.avgQualityScore"],
+                dimensions=["RadiologyAudits.modality"]
             ), "table"
 
     def format_chart_data(
@@ -259,7 +238,7 @@ Generate the Cube.js query and chart type."""
             return ["No data available for this query."]
 
         try:
-            prompt = f"""Given this manufacturing data query and results:
+            prompt = f"""Given this medical radiology data query and results:
 
 Question: {user_question}
 Results: {json.dumps(data[:5], indent=2)}

@@ -20,56 +20,57 @@ class EntityTracker:
 
     def extract_entities(self, message: str) -> Dict[str, Any]:
         """
-        Extract manufacturing entities from message.
+        Extract medical entities from message.
 
         Entities tracked:
-        - part_families: Door_Outer_Left, Door_Outer_Right, Bonnet_Outer
-        - metrics: OEE, defect_rate, cycle_time, etc.
-        - defect_types: springback, burr, crack, etc.
-        - press_lines: Line A, Line B
+        - modalities: CT, MRI, X-ray
+        - metrics: quality_score, safety_score, tat, cat_rating
+        - body_parts: Brain, Spine, Chest, Abdomen
+        - radiologists: names mentioned
         - time_periods: last_week, yesterday, etc.
         """
         entities = {}
+        msg_lower = message.lower()
 
-        # Part families
-        parts = []
-        if "door" in message.lower() or "door_outer" in message.lower():
-            if "left" in message.lower():
-                parts.append("Door_Outer_Left")
-            if "right" in message.lower():
-                parts.append("Door_Outer_Right")
-            if not parts:  # "doors" mentioned but no specific side
-                parts = ["Door_Outer_Left", "Door_Outer_Right"]
-        if "bonnet" in message.lower():
-            parts.append("Bonnet_Outer")
-
-        if parts:
-            entities["part_families"] = parts
+        # Modalities
+        modalities = []
+        if "ct" in msg_lower or "computed tomography" in msg_lower:
+            modalities.append("CT")
+        if "mri" in msg_lower or "magnetic resonance" in msg_lower:
+            modalities.append("MRI")
+        if "x-ray" in msg_lower or "xray" in msg_lower:
+            modalities.append("X-ray")
+        
+        if modalities:
+            entities["modality"] = modalities
 
         # Metrics
         metric_keywords = {
-            "oee": "OEE",
-            "defect": "defect_rate",
-            "quality": "defect_rate",
-            "cycle time": "cycle_time",
-            "tonnage": "tonnage",
-            "utilization": "utilization_rate"
+            "quality": "quality_score",
+            "safety": "safety_score",
+            "score": "quality_score",
+            "rating": "star_rating",
+            "star": "star_rating",
+            "cat": "cat_rating",
+            "tat": "turnaround_time",
+            "time": "turnaround_time",
+            "count": "count",
+            "volume": "count"
         }
         for keyword, metric in metric_keywords.items():
-            if keyword in message.lower():
+            if keyword in msg_lower:
                 entities["current_metric"] = metric
 
-        # Defect types
-        defect_types = ["springback", "burr", "crack", "warp", "scratch"]
-        mentioned_defects = [d for d in defect_types if d in message.lower()]
-        if mentioned_defects:
-            entities["defect_types"] = mentioned_defects
+        # Body Parts
+        body_parts = ["brain", "spine", "chest", "abdomen", "pelvis", "neck", "knee", "shoulder"]
+        mentioned_parts = [bp.title() for bp in body_parts if bp in msg_lower]
+        if mentioned_parts:
+            entities["body_part"] = mentioned_parts
 
-        # Press lines
-        if "line a" in message.lower() or "800t" in message.lower():
-            entities["press_line"] = "Line A"
-        elif "line b" in message.lower() or "1200t" in message.lower():
-            entities["press_line"] = "Line B"
+        # CAT Ratings
+        for i in range(1, 6):
+            if f"cat{i}" in msg_lower or f"cat {i}" in msg_lower:
+                entities["cat_rating"] = f"CAT{i}"
 
         # Time periods
         time_keywords = {
@@ -81,7 +82,7 @@ class EntityTracker:
             "this month": "current_month"
         }
         for keyword, period in time_keywords.items():
-            if keyword in message.lower():
+            if keyword in msg_lower:
                 entities["time_period"] = period
 
         return entities
@@ -102,16 +103,20 @@ class EntityTracker:
 
         # Handle plural references
         if reference_lower in ["these", "those", "them"]:
-            if "part_families" in self.entities:
-                return ", ".join(self.entities["part_families"])
+            if "modality" in self.entities:
+                return ", ".join(self.entities["modality"])
+            if "body_part" in self.entities:
+                return ", ".join(self.entities["body_part"])
 
         # Handle singular references
         if reference_lower in ["it", "that", "this"]:
             # Most recent single entity
             if "current_metric" in self.entities:
                 return self.entities["current_metric"]
-            if "press_line" in self.entities:
-                return self.entities["press_line"]
+            if "modality" in self.entities and len(self.entities["modality"]) == 1:
+                return self.entities["modality"][0]
+            if "body_part" in self.entities and len(self.entities["body_part"]) == 1:
+                return self.entities["body_part"][0]
 
         return None
 
@@ -121,12 +126,14 @@ class EntityTracker:
             return "No context established yet."
 
         parts = []
-        if "part_families" in self.entities:
-            parts.append(f"Parts: {', '.join(self.entities['part_families'])}")
+        if "modality" in self.entities:
+            parts.append(f"Modality: {', '.join(self.entities['modality'])}")
         if "current_metric" in self.entities:
             parts.append(f"Metric: {self.entities['current_metric']}")
-        if "press_line" in self.entities:
-            parts.append(f"Line: {self.entities['press_line']}")
+        if "body_part" in self.entities:
+            parts.append(f"Body Part: {', '.join(self.entities['body_part'])}")
+        if "cat_rating" in self.entities:
+            parts.append(f"Rating: {self.entities['cat_rating']}")
         if "time_period" in self.entities:
             parts.append(f"Period: {self.entities['time_period']}")
 

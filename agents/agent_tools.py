@@ -10,39 +10,39 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class ManufacturingTools:
-    """Tools for Manufacturing Advisor agent."""
+class RadiologyTools:
+    """Tools for Medical Domain Expert agent."""
 
     @staticmethod
-    def manufacturing_glossary(term: str) -> str:
+    def medical_glossary(term: str) -> str:
         """
-        Look up manufacturing terminology.
+        Look up medical radiology terminology.
 
         Args:
-            term: Manufacturing term to look up
+            term: Medical term to look up
 
         Returns:
             Definition or explanation
         """
         glossary = {
-            "OEE": "Overall Equipment Effectiveness - Product of Availability × Performance × Quality. Industry standard is 85%.",
-            "SMED": "Single-Minute Exchange of Die - Rapid die changeover methodology. Goal is <10 minutes.",
-            "springback": "Material's tendency to return to original shape after forming. Common in high-strength steels.",
-            "burr": "Unwanted raised edge or material on a part, typically from cutting or stamping.",
-            "tonnage": "Force applied by press during forming operation, measured in tons (800T, 1200T).",
-            "first pass yield": "Percentage of parts that pass quality inspection on first try, without rework.",
-            "cycle time": "Total time to produce one part, from material feed to part ejection.",
-            "die wear": "Gradual degradation of die surface from repeated contact with material.",
-            "PLC": "Programmable Logic Controller - computer controlling press operations.",
-            "coil": "Roll of sheet metal used as raw material for stamping operations."
+            "TAT": "Turnaround Time - Time from scan completion to final report generation.",
+            "CAT Rating": "Category Rating - Peer review score (CAT1: Good, CAT2: Minor, CAT3: Moderate, CAT4: Major, CAT5: Severe).",
+            "CAT1": "Concurrence - Diagnosis is correct and report is accurate.",
+            "CAT5": "Severe Discrepancy - Missed diagnosis with potential for serious clinical impact.",
+            "Modality": "Imaging technique used (e.g., CT, MRI, X-ray, Ultrasound).",
+            "Accession Number": "Unique identifier for a specific imaging procedure.",
+            "PACS": "Picture Archiving and Communication System - Stores medical images.",
+            "RIS": "Radiology Information System - Manages patient data and scheduling.",
+            "Sub-specialty": "Radiologist's area of expertise (e.g., Neuroradiology, MSK, Body).",
+            "Quality Score": "Composite score (0-100) assessing accuracy, clarity, and completeness of a report."
         }
 
         term_lower = term.lower()
         for key, definition in glossary.items():
-            if key.lower() == term_lower or key.lower() in term_lower:
+            if key.lower() in term_lower:
                 return f"{key}: {definition}"
 
-        return f"Term '{term}' not found in glossary. This is specialized manufacturing terminology."
+        return f"Term '{term}' not found in medical glossary."
 
 
 class StatisticalTools:
@@ -239,77 +239,71 @@ class CubeJsTools:
             return []
 
 
-class CalculatorTools:
-    """General calculation tools for all agents."""
+class MedicalCalculatorTools:
+    """General calculation tools for all medical agents."""
 
     @staticmethod
-    def calculate_oee(availability: float, performance: float, quality: float) -> float:
+    def calculate_tat_efficiency(accession_time: float, target_time: float) -> float:
         """
-        Calculate Overall Equipment Effectiveness.
-
-        OEE = Availability × Performance × Quality
-
+        Calculate TAT efficiency percentage.
+        
         Args:
-            availability: % of planned time equipment was available
-            performance: % of max speed achieved
-            quality: % of good parts produced
-
+            accession_time: Actual time taken (hours)
+            target_time: Target time (hours)
+            
         Returns:
-            OEE as percentage (0-100)
+            Efficiency percentile (higher is better, capped at 100%)
         """
-        # Convert to decimals if given as percentages
-        if availability > 1:
-            availability /= 100
-        if performance > 1:
-            performance /= 100
-        if quality > 1:
-            quality /= 100
-
-        oee = availability * performance * quality * 100
-        return round(oee, 2)
-
-    @staticmethod
-    def calculate_defect_rate(defect_count: int, total_parts: int) -> float:
-        """
-        Calculate defect rate as percentage.
-
-        Args:
-            defect_count: Number of defective parts
-            total_parts: Total parts produced
-
-        Returns:
-            Defect rate as percentage
-        """
-        if total_parts == 0:
+        if target_time <= 0:
             return 0.0
-        return round((defect_count / total_parts) * 100, 2)
+        
+        # If faster than target, efficiency > 100% (but typically capped for scoring)
+        efficiency = (target_time / accession_time) * 100
+        return round(min(efficiency, 150.0), 2)  # Cap at 150%
 
     @staticmethod
-    def calculate_first_pass_yield(good_parts: int, total_parts: int) -> float:
+    def normalize_score(raw_score: float, max_score: float = 17) -> float:
         """
-        Calculate first pass yield.
-
+        Normalize a raw score to 0-100 scale.
+        
         Args:
-            good_parts: Parts passing first inspection
-            total_parts: Total parts produced
-
+            raw_score: The raw score (e.g., 15/17)
+            max_score: Maximum possible score
+            
         Returns:
-            First pass yield as percentage
+            Normalized score (0-100)
         """
-        if total_parts == 0:
+        if max_score <= 0:
             return 0.0
-        return round((good_parts / total_parts) * 100, 2)
+        return round((raw_score / max_score) * 100, 2)
+
+    @staticmethod
+    def calculate_discrepancy_rate(discrepant_cases: int, total_cases: int) -> float:
+        """
+        Calculate error/discrepancy rate.
+        
+        Args:
+            discrepant_cases: Count of CAT3+CAT4+CAT5
+            total_cases: Total audited cases
+            
+        Returns:
+            Rate percentage
+        """
+        if total_cases == 0:
+            return 0.0
+        return round((discrepant_cases / total_cases) * 100, 2)
 
 
 # Tool registry for easy access
+# Tool registry for easy access
 TOOL_REGISTRY = {
-    "manufacturing_advisor": {
-        "manufacturing_glossary": ManufacturingTools.manufacturing_glossary,
+    "domain_expert": {
+        "medical_glossary": RadiologyTools.medical_glossary,
     },
     "quality_inspector": {
         "calculate_z_score": StatisticalTools.calculate_z_score,
         "calculate_control_limits": StatisticalTools.calculate_control_limits,
-        "calculate_cpk": StatisticalTools.calculate_cpk,
+        "calculate_cpk": StatisticalTools.calculate_cpk,  # Still useful for process capability
         "detect_outliers_iqr": StatisticalTools.detect_outliers_iqr,
     },
     "analytics_specialist": {
@@ -318,9 +312,9 @@ TOOL_REGISTRY = {
         "get_cube_dimensions": CubeJsTools.get_cube_dimensions,
     },
     "all": {
-        "calculate_oee": CalculatorTools.calculate_oee,
-        "calculate_defect_rate": CalculatorTools.calculate_defect_rate,
-        "calculate_first_pass_yield": CalculatorTools.calculate_first_pass_yield,
+        "calculate_tat_efficiency": MedicalCalculatorTools.calculate_tat_efficiency,
+        "normalize_score": MedicalCalculatorTools.normalize_score,
+        "calculate_discrepancy_rate": MedicalCalculatorTools.calculate_discrepancy_rate,
     }
 }
 

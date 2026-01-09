@@ -26,7 +26,8 @@ from reef_config import initialize_reef, cleanup_reef
 from praval import broadcast, get_reef, get_registry
 
 # Import all Praval agents (registers them via @agent decorator)
-import manufacturing_advisor
+
+import domain_expert
 import analytics_specialist
 import visualization_specialist
 import quality_inspector
@@ -49,7 +50,7 @@ async def lifespan(app: FastAPI):
     try:
         reef = initialize_reef()
         logger.info("✓ Praval Reef initialized")
-        logger.info(f"✓ Registered agents: Manufacturing Advisor, Analytics Specialist, "
+        logger.info(f"✓ Registered agents: Analytics Specialist, "
                    f"Visualization Specialist, Quality Inspector, Report Writer")
     except Exception as e:
         logger.error(f"✗ Reef initialization error: {str(e)}")
@@ -127,7 +128,7 @@ async def list_agents():
 
         # Agent descriptions based on architecture documentation
         agent_descriptions = {
-            "manufacturing_advisor": "Domain expertise and manufacturing terminology mapping",
+            "domain_expert": "Query analysis and domain enrichment",
             "analytics_specialist": "Query translation and Cube.js execution",
             "visualization_specialist": "Chart type selection and data visualization",
             "quality_inspector": "Anomaly detection and root cause analysis",

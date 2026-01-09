@@ -19,93 +19,85 @@ logger = logging.getLogger(__name__)
 
 # Metric to Cube.js measure mapping by cube
 METRIC_MAPPING = {
-    "PressOperations": {
-        "count": "PressOperations.count",
-        "pass_rate": "PressOperations.passRate",
-        "passed_count": "PressOperations.passedCount",
-        "failed_count": "PressOperations.failedCount",
-        "defect_count": "PressOperations.defectCount",
-        "rework_count": "PressOperations.reworkCount",
-        "OEE": "PressOperations.avgOee",
-        "oee": "PressOperations.avgOee",
-        "avgOee": "PressOperations.avgOee",
-        "availability": "PressOperations.avgAvailability",
-        "performance": "PressOperations.avgPerformance",
-        "quality_rate": "PressOperations.avgQualityRate",
-        "cost_per_part": "PressOperations.avgCostPerPart",
-        "material_cost": "PressOperations.avgMaterialCost",
-        "labor_cost": "PressOperations.avgLaborCost",
-        "energy_cost": "PressOperations.avgEnergyCost",
-        "cycle_time": "PressOperations.avgCycleTime",
-        "tonnage": "PressOperations.avgTonnage",
-        "stroke_rate": "PressOperations.avgStrokeRate",
-        "total_cost": "PressOperations.totalCost",
-    },
-    "PartFamilyPerformance": {
-        "count": "PartFamilyPerformance.totalPartsProduced",
-        "total_parts": "PartFamilyPerformance.totalPartsProduced",
-        "parts_passed": "PartFamilyPerformance.partsPassed",
-        "parts_failed": "PartFamilyPerformance.partsFailed",
-        "first_pass_yield": "PartFamilyPerformance.firstPassYield",
-        "rework_rate": "PartFamilyPerformance.reworkRate",
-        "unique_defect_types": "PartFamilyPerformance.uniqueDefectTypes",
-        "OEE": "PartFamilyPerformance.avgOee",
-        "oee": "PartFamilyPerformance.avgOee",
-        "avgOee": "PartFamilyPerformance.avgOee",
-        "cost_per_part": "PartFamilyPerformance.avgCostPerPart",
-        "total_cost": "PartFamilyPerformance.totalProductionCost",
-        "cycle_time": "PartFamilyPerformance.avgCycleTime",
-        "tonnage": "PartFamilyPerformance.avgTonnage",
-    },
-    "PressLineUtilization": {
-        "count": "PressLineUtilization.totalPartsProduced",
-        "total_parts": "PressLineUtilization.totalPartsProduced",
-        "parts_passed": "PressLineUtilization.totalPartsPassed",
-        "parts_failed": "PressLineUtilization.totalPartsFailed",
-        "pass_rate": "PressLineUtilization.avgPassRate",
-        "OEE": "PressLineUtilization.overallAvgOee",
-        "oee": "PressLineUtilization.overallAvgOee",
-        "avgOee": "PressLineUtilization.overallAvgOee",
-        "availability": "PressLineUtilization.overallAvgAvailability",
-        "performance": "PressLineUtilization.overallAvgPerformance",
-        "quality_rate": "PressLineUtilization.overallAvgQualityRate",
-        "tonnage": "PressLineUtilization.avgTonnage",
-        "cycle_time": "PressLineUtilization.avgCycleTime",
-        "total_cost": "PressLineUtilization.totalCost",
-        "cost_per_unit": "PressLineUtilization.avgCostPerUnit",
-        "defects": "PressLineUtilization.totalDefects",
-        "rework": "PressLineUtilization.totalRework",
-        "weekend_production": "PressLineUtilization.weekendProductionPct",
-        "utilization_rate": "PressLineUtilization.utilizationRate",
+    # Medical Radiology Audits Cube
+    "RadiologyAudits": {
+        "count": "RadiologyAudits.count",
+        "avgQualityScore": "RadiologyAudits.avgQualityScore",
+        "quality_score": "RadiologyAudits.avgQualityScore",
+        "quality": "RadiologyAudits.avgQualityScore",
+        "avgSafetyScore": "RadiologyAudits.avgSafetyScore",
+        "safety_score": "RadiologyAudits.avgSafetyScore",
+        "safety": "RadiologyAudits.avgSafetyScore",
+        "avgProductivityScore": "RadiologyAudits.avgProductivityScore",
+        "productivity_score": "RadiologyAudits.avgProductivityScore",
+        "productivity": "RadiologyAudits.avgProductivityScore",
+        "avgEfficiencyScore": "RadiologyAudits.avgEfficiencyScore",
+        "efficiency_score": "RadiologyAudits.avgEfficiencyScore",
+        "efficiency": "RadiologyAudits.avgEfficiencyScore",
+        "avgStarScore": "RadiologyAudits.avgStarScore",
+        "star_score": "RadiologyAudits.avgStarScore",
+        "avgStarRating": "RadiologyAudits.avgStarRating",
+        "star_rating": "RadiologyAudits.avgStarRating",
+        "stars": "RadiologyAudits.avgStarRating",
+        "cat5Count": "RadiologyAudits.cat5Count",
+        "cat5": "RadiologyAudits.cat5Count",
+        "cat4Count": "RadiologyAudits.cat4Count",
+        "cat4": "RadiologyAudits.cat4Count",
+        "cat3Count": "RadiologyAudits.cat3Count",
+        "cat3": "RadiologyAudits.cat3Count",
+        "cat2Count": "RadiologyAudits.cat2Count",
+        "cat2": "RadiologyAudits.cat2Count",
+        "cat1Count": "RadiologyAudits.cat1Count",
+        "cat1": "RadiologyAudits.cat1Count",
+        "highQualityRate": "RadiologyAudits.highQualityRate",
+        "high_quality_rate": "RadiologyAudits.highQualityRate",
+        "reauditCount": "RadiologyAudits.reauditCount",
+        "reaudit_count": "RadiologyAudits.reauditCount",
+        "avgAge": "RadiologyAudits.avgAge",
+        "avg_age": "RadiologyAudits.avgAge",
+        "avg_age": "RadiologyAudits.avgAge",
     },
 }
 
 # Dimension mapping by cube
 DIMENSION_MAPPING = {
-    "PressOperations": {
-        "part_family": "PressOperations.partFamily",
-        "press_line_id": "PressOperations.pressLineId",
-        "line_name": "PressOperations.lineName",
-        "die_id": "PressOperations.dieId",
-        "shift_id": "PressOperations.shiftId",
-        "operator_id": "PressOperations.operatorId",
-        "material_grade": "PressOperations.materialGrade",
-        "defect_type": "PressOperations.defectType",
-        "defect_severity": "PressOperations.defectSeverity",
-        "quality_status": "PressOperations.qualityStatus",
-        "part_type": "PressOperations.partType",
-        "coil_id": "PressOperations.coilId",
-        "is_weekend": "PressOperations.isWeekend",
-    },
-    "PartFamilyPerformance": {
-        "part_family": "PartFamilyPerformance.partFamily",
-        "part_type": "PartFamilyPerformance.partType",
-        "material_grade": "PartFamilyPerformance.materialGrade",
-    },
-    "PressLineUtilization": {
-        "press_line_id": "PressLineUtilization.pressLineId",
-        "line_name": "PressLineUtilization.lineName",
-        "part_type": "PressLineUtilization.partType",
+    # Medical Radiology Audits Cube
+    "RadiologyAudits": {
+        "modality": "RadiologyAudits.modality",
+        "sub_specialty": "RadiologyAudits.subSpecialty",
+        "subSpecialty": "RadiologyAudits.subSpecialty",
+        "subspecialty": "RadiologyAudits.subSpecialty",
+        "body_part_category": "RadiologyAudits.bodyPartCategory",
+        "bodyPartCategory": "RadiologyAudits.bodyPartCategory",
+        "body_part": "RadiologyAudits.bodyPartCategory",
+        "bodyPart": "RadiologyAudits.bodyPart",
+        "original_radiologist": "RadiologyAudits.originalRadiologist",
+        "originalRadiologist": "RadiologyAudits.originalRadiologist",
+        "radiologist": "RadiologyAudits.originalRadiologist",
+        "reviewer": "RadiologyAudits.reviewer",
+        "review_radiologist": "RadiologyAudits.reviewer",
+        "final_output": "RadiologyAudits.finalOutput",
+        "finalOutput": "RadiologyAudits.finalOutput",
+        "cat_rating": "RadiologyAudits.finalOutput",
+        "cat": "RadiologyAudits.finalOutput",
+        "star_rating": "RadiologyAudits.starRating",
+        "starRating": "RadiologyAudits.starRating",
+        "star": "RadiologyAudits.starRating",
+        "gender": "RadiologyAudits.gender",
+        "age": "RadiologyAudits.age",
+        "age_cohort": "RadiologyAudits.ageCohort",
+        "ageCohort": "RadiologyAudits.ageCohort",
+        "scan_type": "RadiologyAudits.scanType",
+        "scanType": "RadiologyAudits.scanType",
+        "institute_name": "RadiologyAudits.instituteName",
+        "instituteName": "RadiologyAudits.instituteName",
+        "unit_identifier": "RadiologyAudits.unitIdentifier",
+        "unitIdentifier": "RadiologyAudits.unitIdentifier",
+        "second_review": "RadiologyAudits.secondReview",
+        "secondReview": "RadiologyAudits.secondReview",
+        "required_reaudit": "RadiologyAudits.requiredReaudit",
+        "requiredReaudit": "RadiologyAudits.requiredReaudit",
+        "requiredReaudit": "RadiologyAudits.requiredReaudit",
     },
 }
 
@@ -193,7 +185,16 @@ class AnalyticsSpecialistAgent:
         for key, value in filters_dict.items():
             mapped_dim = dimension_map.get(key)
             if mapped_dim:
-                if isinstance(value, list):
+                # Handle advanced operator format: {"operator": "lt", "value": 25}
+                if isinstance(value, dict) and "operator" in value:
+                    op = value.get("operator", "equals")
+                    val = value.get("value")
+                    filters.append({
+                        "member": mapped_dim,
+                        "operator": op,
+                        "values": [str(val)] if val is not None else []
+                    })
+                elif isinstance(value, list):
                     filters.append({
                         "member": mapped_dim,
                         "operator": "contains",
@@ -203,7 +204,7 @@ class AnalyticsSpecialistAgent:
                     filters.append({
                         "member": mapped_dim,
                         "operator": "equals",
-                        "values": [value]
+                        "values": [str(value)]
                     })
 
         # Build time dimensions if time_range provided
@@ -332,7 +333,7 @@ class AnalyticsSpecialistAgent:
 @agent(
     "analytics_specialist",
     responds_to=["domain_enriched_request", "query_refinement_needed"],
-    system_message="You are a data analyst specializing in press shop metrics and production analytics.",
+    system_message="You are a medical data specialist focusing on radiology audit analytics.",
     auto_broadcast=False
 )
 def analytics_specialist_handler(spore: Spore):

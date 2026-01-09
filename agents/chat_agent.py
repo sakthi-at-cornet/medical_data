@@ -35,7 +35,7 @@ class ChatAgent:
         Returns:
             True if a data query is needed, False for general chat
         """
-        prompt = f"""Determine if this user message requires querying automotive manufacturing analytics data.
+        prompt = f"""Determine if this user message requires querying medical radiology audit data.
 
 User message: "{user_message}"
 {f"Context: {context}" if context else ""}
@@ -43,16 +43,15 @@ User message: "{user_message}"
 Respond with JSON: {{"requires_data_query": true/false, "reason": "brief explanation"}}
 
 Messages requiring data queries:
-- Specific questions about OEE, pass rates, quality metrics, production volumes
-- Requests for trends, comparisons, statistics on actual data
-- "What is the OEE?", "Show me defect trends", "Compare press lines", "Which shift is most productive?"
-- Cost analysis, shift performance, part family comparisons
-- "What's the cost per part?", "Show weekend vs weekday production"
+- Specific questions about quality scores, safety scores, CAT ratings, star ratings
+- Requests for counts, averages, trends, or comparisons on medical data
+- "How many male/female?", "Average quality by modality", "Show me CAT5 distribution"
+- Analysis of radiologists, body parts, turnaround times, efficiency
+- "Who is the top radiologist?", "Compare CT vs MRI", "Show audits by time of day"
 
 Messages NOT requiring data queries (respond conversationally):
-- Meta-questions about the system: "What datasets?", "What data is available?", "What can I ask?"
-- Schema/capability questions: "What metrics do you track?", "What press lines?", "What part families?"
-- Manufacturing domain education: "What is OEE?", "Explain SMED", "What's tonnage?"
+- Meta-questions about the system: "What data is this?", "What can I ask?"
+- Domain education: "What is a CAT5 rating?", "Explain safety score"
 - Greetings: "hello", "hi", "hey"
 - Thank you messages
 - Clarification questions about previous responses
@@ -86,44 +85,35 @@ Messages NOT requiring data queries (respond conversationally):
         context: str = ""
     ) -> str:
         """Generate a conversational response without data query."""
-        system_prompt = """You are a helpful assistant for an automotive press manufacturing analytics system.
+        system_prompt = """You are a helpful assistant for a medical radiology audit analytics system.
 
-Manufacturing Context:
-- 2 Press Lines: Line A (800T) produces door outer panels (left/right), Line B (1200T) produces bonnet outer panels
-- 3 Part Families: Door_Outer_Left, Door_Outer_Right, Bonnet_Outer
-- Material Grades: CRS_SPCC (cold rolled steel), HSLA_350, DP600 (high-strength steels)
-- Process: High-speed stamping with cycle times of 1.2-2.0 seconds per part
-- Quality Focus: OEE (Overall Equipment Effectiveness), defect analysis, first pass yield
+Medical Radiology Context:
+- Modalities: CT, MRI
+- Key Metrics: Quality Score (Q1-Q17), Safety Score, Star Rating (1-5), Turnaround Time (TAT)
+- CAT Ratings: 
+  - CAT1: Good (concurrence)
+  - CAT2: Minor discrepancy (no clinical impact)
+  - CAT3: Moderate discrepancy (possible impact)
+  - CAT4: Major discrepancy (clinical impact)
+  - CAT5: Severe discrepancy (critical impact)
+- Goals: Monitor diagnostic quality, improve patient safety, optimize radiologist performance
 
-Available Data Sources:
-• PressOperations: Production-level data with full traceability
-  - Metrics: pass rate, OEE (availability, performance, quality rate), tonnage, cycle time, costs (material/labor/energy)
-  - Dimensions: part family, press line, die, material grade, coil, shift, operator, defect type
-  - Use for: Root cause analysis, shift performance, die/coil traceability, defect patterns
+Available Data:
+- 448 Audit Cases
+- Dimensions: Radiologist, Institute, Body Part Category, Age Cohort, Gender, Scan Type
+- Metrics: Avg Quality Score, Count of CAT ratings, Audits per Radiologist
 
-• PartFamilyPerformance: Aggregated performance by part type
-  - Metrics: first pass yield, rework rate, OEE components, cost per part, material correlation (coil defect rate, yield/tensile strength)
-  - Dimensions: part family (Door Left/Right vs Bonnet), part type, material grade
-  - Use for: Part family comparison, material grade optimization, cost analysis
-
-• PressLineUtilization: Press line capacity and shift analysis
-  - Metrics: overall OEE, shift productivity (morning/afternoon/night), weekend vs weekday production, utilization rate (parts/day)
-  - Dimensions: press line (Line A vs Line B), part type
-  - Use for: Capacity planning, shift optimization, line comparison
-
-When users ask meta-questions like "What datasets?" or "What can I ask?", explain these data sources and automotive context clearly.
+When users ask meta-questions like "What data?", explain these metrics and the medical context clearly.
 
 Example questions to suggest:
-- "What's the OEE for each press line?"
-- "Which part family has the best quality?"
-- "Show me defect trends over time"
-- "Compare shift performance"
-- "Which material grade performs better?"
-- "What's the cost per part by line?"
-- "Show me weekend vs weekday production"
-- "Which defect types are most common?"
+- "What is the average quality score by modality?"
+- "Which radiologist has the most CAT5 cases?"
+- "Show me the distribution of star ratings"
+- "How does quality compare between CT and MRI?"
+- "What are the common issues in CAT4 cases?"
+- "Show audits by time of day"
 
-Be friendly and concise. If asked about capabilities, explain what manufacturing data we track without overwhelming the user.
+Be friendly and concise. Explain capabilities clearly without overwhelming the user.
 """
 
         messages = [
@@ -146,7 +136,7 @@ Be friendly and concise. If asked about capabilities, explain what manufacturing
 
         except Exception as e:
             logger.error(f"Error generating response: {str(e)}")
-            return "Hello! I can help you analyze manufacturing data. Try asking about pass rates, quality, or production trends."
+            return "Hello! I can help you analyze radiology audit data. Try asking about quality scores, CAT ratings, or radiologist performance."
 
     async def suggest_followup_questions(
         self,
@@ -156,77 +146,56 @@ Be friendly and concise. If asked about capabilities, explain what manufacturing
         """Generate relevant follow-up questions based on the current query."""
         suggestions = []
 
-        # Pattern-based suggestions for automotive manufacturing domain
-        if "oee" in user_question.lower() or "efficiency" in user_question.lower():
+        # Pattern-based suggestions for medical radiology domain
+        if "quality" in user_question.lower() or "score" in user_question.lower():
             suggestions.extend([
-                "What's the OEE breakdown (availability, performance, quality)?",
-                "Compare OEE by shift",
-                "Show me OEE trends over time"
+                "How does safety score correlate with quality?",
+                "What's the average quality score by radiologist?",
+                "Show me the trend of quality scores"
             ])
 
-        if "pass rate" in user_question.lower() or "quality" in user_question.lower():
+        if "cat" in user_question.lower() or "rating" in user_question.lower():
             suggestions.extend([
-                "Which defect types are most common?",
-                "What's the first pass yield by part family?",
-                "Show me quality trends over time"
+                "Which modality has the most CAT5 cases?",
+                "Show me the distribution of CAT ratings",
+                "What are the common causes for CAT4?"
             ])
 
-        if "part" in user_question.lower() or "door" in user_question.lower() or "bonnet" in user_question.lower():
+        if "radiologist" in user_question.lower():
             suggestions.extend([
-                "Compare cost per part across part families",
-                "Which part family has the best OEE?",
-                "Show me production volumes by part"
+                "Compare radiologist performance metrics",
+                "Who has the highest safety score?",
+                "Show audit counts per radiologist"
             ])
 
-        if "line" in user_question.lower() or "press" in user_question.lower():
+        if "modality" in user_question.lower() or "ct" in user_question.lower() or "mri" in user_question.lower():
             suggestions.extend([
-                "Compare Line A vs Line B utilization",
-                "What's the shift performance on each line?",
-                "Show me weekend vs weekday production"
+                "Compare quality scores between CT and MRI",
+                "What's the CAT rating breakdown for CT?",
+                "Show me the audit volume by modality"
             ])
 
-        if "shift" in user_question.lower():
+        if "tat" in user_question.lower() or "time" in user_question.lower():
             suggestions.extend([
-                "Which shift has the highest productivity?",
-                "Compare morning, afternoon, and night shift output",
-                "What's the quality by shift?"
+                "What's the average turnaround time?",
+                "How does TAT vary by time of day?",
+                "Show me the relationship between TAT and quality"
             ])
 
-        if "cost" in user_question.lower():
+        if "body part" in user_question.lower():
             suggestions.extend([
-                "Break down costs by material, labor, and energy",
-                "Which line has lower cost per part?",
-                "Compare costs across part families"
-            ])
-
-        if "defect" in user_question.lower():
-            suggestions.extend([
-                "Which defects require the most rework?",
-                "Show me defect trends by part family",
-                "What's the defect rate by material grade?"
-            ])
-
-        if "material" in user_question.lower() or "coil" in user_question.lower():
-            suggestions.extend([
-                "Compare material grades by quality",
-                "Which coils have the highest defect rate?",
-                "What's the yield strength correlation with quality?"
-            ])
-
-        if "trend" in user_question.lower() or "time" in user_question.lower():
-            suggestions.extend([
-                "What's the overall OEE?",
-                "Compare part families by quality",
-                "Show me shift productivity"
+                "Which body part category has the lowest quality score?",
+                "Compare safety scores by body part",
+                "Show audit volume by body part"
             ])
 
         # Default suggestions if none matched
         if not suggestions:
             suggestions = [
-                "What's the OEE for each press line?",
-                "Which part family has the best quality?",
-                "Compare shift performance",
-                "Show me defect trends over time"
+                "What is the average quality score?",
+                "Show me the distribution of CAT ratings",
+                "How many audits were conducted?",
+                "Compare performance by modality"
             ]
 
         return suggestions[:3]  # Return max 3 suggestions

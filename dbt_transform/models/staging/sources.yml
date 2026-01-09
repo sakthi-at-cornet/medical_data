@@ -1,391 +1,77 @@
 version: 2
 
 sources:
-  - name: raw
-    description: Raw manufacturing data loaded from source systems via EL pipeline
+  - name: medical
+    description: Medical radiology audit data loaded from CSVs
     database: warehouse
-    schema: raw
+    schema: medical
 
     tables:
-      - name: refills_production
-        description: Ink refills manufacturing line production data
+      - name: radiology_audits
+        description: Radiology audit records with scores and metadata
         columns:
-          - name: id
-            description: Primary key from source system
+          - name: sr_no
+            description: Serial number
             tests:
               - not_null
               - unique
+          - name: case_id
+            description: Case identifier
+          - name: age
+            description: Patient age
+          - name: gender
+            description: Patient gender
+          - name: modality
+            description: Scan modality (e.g., CT, MRI, X-ray)
+          - name: study_description
+            description: Description of the study
+          - name: sub_specialty
+            description: Sub-specialty area
+          - name: scan_type
+            description: Type of scan
+          - name: body_part
+            description: Body part scanned
+          - name: body_part_category
+            description: Category of body part
+          - name: scan_date_and_time
+            description: Timestamp of scan
+          - name: report_date_and_time
+            description: Timestamp of report
+          - name: case_upload_date_and_time
+            description: Timestamp of case upload
+          - name: original_radiologist_name
+            description: Name of original radiologist
+          - name: institute_name
+            description: Name of institute
+          - name: final_output
+            description: Final CAT output
+          - name: quality_score
+            description: Quality score
+          - name: safety_score
+            description: Safety score
+          - name: star_score
+            description: Star score
 
-          - name: timestamp
-            description: Production timestamp
-            tests:
-              - not_null
-
-          - name: line_id
-            description: Production line identifier (LINE-REFILLS-001 or LINE-REFILLS-002)
-            tests:
-              - not_null
-
-          - name: batch_id
-            description: Batch identifier
-            tests:
-              - not_null
-
-          - name: ink_viscosity_pas
-            description: Ink viscosity in Pascal-seconds (0.5-2.0 typical)
-
-          - name: write_distance_km
-            description: Writing distance in kilometers (2-5 km typical)
-
-          - name: tip_diameter_mm
-            description: Tip diameter in millimeters (0.5-1.0mm)
-
-          - name: ink_color
-            description: Ink color (black, blue, red, green, purple)
-            tests:
-              - accepted_values:
-                  values: ['black', 'blue', 'red', 'green', 'purple']
-
-          - name: flow_consistency
-            description: Flow consistency rating (0.9-1.0)
-
-          - name: quality_status
-            description: Quality control status (ok or error)
-            tests:
-              - not_null
-              - accepted_values:
-                  values: ['ok', 'error']
-
-      - name: bodies_production
-        description: Pen bodies manufacturing line production data
+      - name: question_weightage
+        description: Weightage for audit questions
         columns:
-          - name: id
-            description: Primary key from source system
-            tests:
-              - not_null
-              - unique
+          - name: question_no
+            description: Question number identifier
+          - name: category
+            description: Question category
+          - name: responsibility
+            description: Responsibility (RAD vs ORG)
+          - name: percentage_weightage
+            description: Weightage percentage
 
-          - name: timestamp
-            description: Production timestamp
-            tests:
-              - not_null
-
-          - name: line_id
-            description: Production line identifier
-            tests:
-              - not_null
-
-          - name: batch_id
-            description: Batch identifier
-            tests:
-              - not_null
-
-          - name: durability_score
-            description: Durability score (0-100, higher is better)
-
-          - name: color_match_rating
-            description: Color match rating (0-1, 1 is perfect match)
-
-          - name: length_mm
-            description: Body length in millimeters (145-155mm typical)
-
-          - name: wall_thickness_mm
-            description: Wall thickness in millimeters
-
-          - name: material
-            description: Body material (plastic, bamboo, metal)
-            tests:
-              - accepted_values:
-                  values: ['plastic', 'bamboo', 'metal']
-
-          - name: quality_status
-            description: Quality control status
-            tests:
-              - not_null
-              - accepted_values:
-                  values: ['ok', 'error']
-
-      - name: springs_production
-        description: Springs manufacturing line production data
+      - name: scoring_rubric
+        description: Rubric for scoring questions
         columns:
-          - name: id
-            description: Primary key from source system
-            tests:
-              - not_null
-              - unique
-
-          - name: timestamp
-            description: Production timestamp
-            tests:
-              - not_null
-
-          - name: line_id
-            description: Production line identifier
-            tests:
-              - not_null
-
-          - name: batch_id
-            description: Batch identifier
-            tests:
-              - not_null
-
-          - name: diameter_mm
-            description: Spring diameter in millimeters (0.8-1.5mm typical)
-
-          - name: tensile_strength_mpa
-            description: Tensile strength in megapascals (800-1200 MPa typical)
-
-          - name: material
-            description: Spring material
-            tests:
-              - accepted_values:
-                  values: ['stainless_steel', 'music_wire', 'chrome_vanadium']
-
-          - name: compression_ratio
-            description: Compression ratio (0.85-1.0)
-
-          - name: quality_status
-            description: Quality control status
-            tests:
-              - not_null
-              - accepted_values:
-                  values: ['ok', 'error']
-
-  # ==================================================
-  # AUTOMOTIVE PRESS LINE SOURCES (via Foreign Data Wrappers in raw schema)
-  # ==================================================
-
-  - name: press_line_a
-    description: Press Line A (800T) - Door outer panel stamping
-    database: warehouse
-    schema: raw
-
-    tables:
-      - name: press_line_a_production
-        description: Door outer panel production data (90 days, ~2160 records)
-        columns:
-          - name: id
-            description: Primary key
-            tests:
-              - not_null
-              - unique
-
-          - name: part_id
-            description: Unique part identifier
-            tests:
-              - not_null
-              - unique
-
-          - name: timestamp
-            description: Production timestamp
-            tests:
-              - not_null
-
-          - name: press_line_id
-            description: Press line identifier (LINE_A_800T)
-
-          - name: die_id
-            description: Die identifier (DIE_DOL_Rev3 or DIE_DOR_Rev2)
-            tests:
-              - not_null
-
-          - name: batch_id
-            description: Batch identifier
-            tests:
-              - not_null
-
-          - name: part_family
-            description: Part family (Door_Outer_Left or Door_Outer_Right)
-            tests:
-              - not_null
-              - accepted_values:
-                  values: ['Door_Outer_Left', 'Door_Outer_Right']
-
-          - name: coil_id
-            description: Material coil identifier for traceability
-            tests:
-              - not_null
-
-          - name: material_grade
-            description: Material grade (CRS_SPCC)
-
-          - name: tonnage_peak
-            description: Peak tonnage in tons (600-650T range)
-
-          - name: stroke_rate_spm
-            description: Strokes per minute (45-50 SPM)
-
-          - name: cycle_time_seconds
-            description: Cycle time in seconds (1.2-1.5s)
-
-          - name: quality_status
-            description: Quality status (ok or error)
-            tests:
-              - not_null
-              - accepted_values:
-                  values: ['ok', 'error']
-
-          - name: defect_type
-            description: Defect type if quality_status = error
-
-          - name: oee
-            description: Overall Equipment Effectiveness
-
-  - name: press_line_b
-    description: Press Line B (1200T) - Bonnet outer panel stamping
-    database: warehouse
-    schema: raw
-
-    tables:
-      - name: press_line_b_production
-        description: Bonnet outer panel production data (90 days, ~2160 records)
-        columns:
-          - name: id
-            description: Primary key
-            tests:
-              - not_null
-              - unique
-
-          - name: part_id
-            description: Unique part identifier
-            tests:
-              - not_null
-              - unique
-
-          - name: timestamp
-            description: Production timestamp
-            tests:
-              - not_null
-
-          - name: press_line_id
-            description: Press line identifier (LINE_B_1200T)
-
-          - name: die_id
-            description: Die identifier (DIE_BO_Rev5 or DIE_BO_Rev4)
-            tests:
-              - not_null
-
-          - name: part_family
-            description: Part family (Bonnet_Outer)
-            tests:
-              - not_null
-              - accepted_values:
-                  values: ['Bonnet_Outer']
-
-          - name: material_grade
-            description: Material grade (HSLA_350 or DP600)
-            tests:
-              - accepted_values:
-                  values: ['HSLA_350', 'DP600']
-
-          - name: tonnage_peak
-            description: Peak tonnage in tons (900-1100T range)
-
-          - name: quality_status
-            description: Quality status (ok or error)
-            tests:
-              - not_null
-              - accepted_values:
-                  values: ['ok', 'error']
-
-          - name: oee
-            description: Overall Equipment Effectiveness
-
-  - name: die_management
-    description: Die management system
-    database: warehouse
-    schema: raw
-
-    tables:
-      - name: die_master
-        description: Die inventory master data (4 dies)
-        columns:
-          - name: die_id
-            description: Primary key - die identifier
-            tests:
-              - not_null
-              - unique
-
-          - name: part_family
-            description: Part family this die produces
-
-          - name: health_status
-            description: Current health status (good, fair, poor, maintenance_required)
-
-      - name: die_changeover_events
-        description: Die changeover events with SMED metrics (~270 events)
-        columns:
-          - name: changeover_id
-            description: Primary key
-            tests:
-              - not_null
-              - unique
-
-          - name: press_line_id
-            description: Press line where changeover occurred
-
-          - name: die_removed_id
-            description: Die that was removed
-
-          - name: die_installed_id
-            description: Die that was installed
-
-          - name: duration_minutes
-            description: Changeover duration in minutes
-
-      - name: die_condition_assessments
-        description: Daily die condition assessments (~360 records)
-        columns:
-          - name: assessment_id
-            description: Primary key
-            tests:
-              - not_null
-              - unique
-
-          - name: die_id
-            description: Die being assessed
-
-          - name: overall_health_score
-            description: Health score 0-100
-
-  - name: materials
-    description: Material coil tracking system (warehouse marts schema)
-    database: warehouse
-    schema: marts
-
-    tables:
-      - name: supplier_master
-        description: Supplier master data (3 suppliers)
-        columns:
-          - name: supplier_id
-            description: Primary key - supplier identifier
-            tests:
-              - not_null
-              - unique
-
-          - name: supplier_name
-            description: Supplier name
-
-          - name: quality_score_overall
-            description: Overall quality score 0-100
-
-      - name: material_coils
-        description: Material coil tracking with traceability (~126 coils)
-        columns:
-          - name: coil_id
-            description: Primary key - coil identifier
-            tests:
-              - not_null
-              - unique
-
-          - name: supplier_id
-            description: Supplier who provided this coil
-
-          - name: material_grade
-            description: Material grade (CRS_SPCC, HSLA_350, DP600)
-
-          - name: yield_strength_mpa
-            description: Yield strength in MPa
-
-          - name: parts_produced
-            description: Number of parts produced from this coil
+          - name: question_no
+            description: Question number
+          - name: actual_question
+            description: Text of the question
+          - name: score_0
+            description: Value for score 0
+          - name: score_5
+            description: Value for score 5

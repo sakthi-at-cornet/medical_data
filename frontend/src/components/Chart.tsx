@@ -86,23 +86,34 @@ export const Chart: React.FC<ChartProps> = ({ chartData }) => {
     };
   }
 
+  // Get options from backend if available, otherwise use defaults
+  const backendOptions = chartData.options || {};
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top' as const,
+        ...backendOptions?.plugins?.legend,
       },
       title: {
-        display: !!title,
-        text: title || '',
+        display: !!title || !!backendOptions?.plugins?.title?.text,
+        text: backendOptions?.plugins?.title?.text || title || '',
+        ...backendOptions?.plugins?.title,
       },
     },
     scales: {
       y: {
         beginAtZero: true,
+        // Don't constrain max - let Chart.js auto-scale based on data
+        ...backendOptions?.scales?.y,
+      },
+      x: {
+        ...backendOptions?.scales?.x,
       },
     },
+    ...backendOptions,
   };
 
   if (chart_type === 'table') {

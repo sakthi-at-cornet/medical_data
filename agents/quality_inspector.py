@@ -24,9 +24,12 @@ class QualityInspectorAgent:
 
     def __init__(self):
         """Initialize the Quality Inspector Agent."""
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self.model = settings.openai_model
-        logger.info("Quality Inspector Agent initialized")
+        self.client = AsyncOpenAI(
+            api_key=settings.groq_api_key,
+            base_url=settings.groq_base_url
+        )
+        self.model = settings.groq_model
+        logger.info("Quality Inspector Agent initialized with Groq/Kimi K2")
 
     async def analyze_data(
         self,
@@ -62,13 +65,14 @@ class QualityInspectorAgent:
         data_summary = self._summarize_data(data, measures, dimensions)
 
         # Build analysis prompt with strict anti-hallucination instructions
-        prompt = f"""You are a quality engineer analyzing automotive press manufacturing data.
+        prompt = f"""You are a medical quality auditor analyzing radiology performance data.
 
-Manufacturing Context:
-- 2 Press Lines: LINE_A (800T, produces Door_Outer_Left and Door_Outer_Right), LINE_B (1200T, produces Bonnet_Outer)
-- 3 Part Families: Door_Outer_Left, Door_Outer_Right, Bonnet_Outer
-- Common Defects: springback, burr, wrinkle, scratch, dent, crack
-- Key Factors: die wear, material variation, operator skill, process parameters (tonnage, cycle time)
+Medical Radiology Context:
+- Modalities: CT, MRI
+- Metrics: Quality Score (Q1-Q17), Safety Score, Star Rating (1-5), Turnaround Time (TAT)
+- CAT Ratings: CAT1 (Good) to CAT5 (Severe deficiencies)
+- Key Factors: Radiologist experience, case complexity, body part scanned, time of day
+- Goals: Improve patient safety, reduce diagnostic errors, optimize efficiency
 
 Data Summary:
 {data_summary}
@@ -87,8 +91,8 @@ CRITICAL ANTI-HALLUCINATION RULES:
 
 Analyze this data and provide:
 1. Observation Insights: Key patterns, comparisons, trends FROM THE DATA ABOVE ONLY
-2. Anomalies: Unusual values or outliers (ONLY if visible in the data)
-3. Root Cause Hypotheses: Manufacturing reasons for patterns YOU CAN SEE in the data
+2. Anomalies: Unusual values or outliers (ONLY if visible in the data, e.g., low safety scores)
+3. Root Cause Hypotheses: Clinical/Operational reasons for patterns YOU CAN SEE in the data
 
 Respond in JSON format:
 {{
@@ -113,7 +117,7 @@ Respond in JSON format:
             "hypothesis": "Root cause hypothesis text",
             "confidence": 0.0-1.0,
             "evidence": ["supporting evidence DIRECTLY from the data above"],
-            "recommended_action": "Specific corrective action"
+            "recommended_action": "Specific corrective action for radiology dept"
         }}
     ]
 }}
@@ -240,7 +244,7 @@ Guidelines:
 @agent(
     "quality_inspector",
     responds_to=["data_ready"],
-    system_message="You are a quality engineer with expertise in root cause analysis and statistical process control for automotive manufacturing.",
+    system_message="You are a medical quality auditor with expertise in radiology audits, patient safety, and clinical performance metrics.",
     auto_broadcast=False
 )
 def quality_inspector_handler(spore: Spore):

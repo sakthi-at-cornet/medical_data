@@ -64,11 +64,11 @@ default_args = {
 dag = DAG(
     'mds_pipeline',
     default_args=default_args,
-    description='Manufacturing Data Stack - EL + dbt Pipeline',
+    description='Medical Data Stack - EL + dbt Pipeline',
     schedule_interval='0 0 * * *',  # Daily at midnight
     start_date=days_ago(1),
     catchup=False,
-    tags=['manufacturing', 'el', 'dbt'],
+    tags=['medical', 'radiology', 'el', 'dbt'],
 )
 
 # Task 1: Extract and Load from source databases
@@ -108,8 +108,8 @@ def generate_summary(**context):
     execution_date = context['execution_date']
     print(f"Pipeline completed successfully for {execution_date}")
     print("Summary:")
-    print("- EL Pipeline: Extracted and loaded data from 3 source databases")
-    print("- dbt Transformations: Built 8 models (5 views, 3 tables)")
+    print("- EL Pipeline: Extracted and loaded radiology audit data")
+    print("- dbt Transformations: Built medical models (stg_radiology_audits, mart_radiology_quality)")
     print("- dbt Tests: Executed 53 tests")
     return "Pipeline execution complete"
 

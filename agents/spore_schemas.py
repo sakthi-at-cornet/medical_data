@@ -30,11 +30,11 @@ class UserQueryKnowledge(BaseModel):
 
 
 class DomainEnrichedRequestKnowledge(BaseModel):
-    """Knowledge payload for domain_enriched_request Spore (Manufacturing Advisor → Analytics Specialist)."""
+    """Knowledge payload for domain_enriched_request Spore (Domain Expert → Analytics Specialist)."""
 
     type: Literal["domain_enriched_request"] = "domain_enriched_request"
-    user_intent: str = Field(..., description="Classified intent (e.g., 'compare_defects_by_part_family')")
-    part_families: List[str] = Field(default_factory=list, description="Part families involved")
+    user_intent: str = Field(..., description="Classified intent (e.g., 'compare_quality_by_modality')")
+    entities: List[str] = Field(default_factory=list, description="Entities involved (modalities, body parts, etc.)")
     metrics: List[str] = Field(default_factory=list, description="Metrics requested")
     dimensions: List[str] = Field(default_factory=list, description="Dimensions for breakdown")
     cube_recommendation: str = Field(..., description="Recommended Cube.js cube")
@@ -82,7 +82,7 @@ class ObservationInsight(BaseModel):
 class AnomalyInsight(BaseModel):
     """Individual anomaly detected."""
 
-    entity: str = Field(..., description="Entity with anomaly (e.g., Door_Outer_Left)")
+    entity: str = Field(..., description="Entity with anomaly (e.g., CT, Brain)")
     metric: str = Field(..., description="Metric with anomaly")
     severity: str = Field(..., description="Severity (low, moderate, high, critical)")
     description: str = Field(..., description="Human-readable anomaly description")
@@ -177,7 +177,7 @@ def create_user_query_knowledge(message: str, session_id: str, context: List[Dic
 
 def create_domain_enriched_request_knowledge(
     user_intent: str,
-    part_families: List[str],
+    entities: List[str],
     metrics: List[str],
     dimensions: List[str],
     cube_recommendation: str,
@@ -191,7 +191,7 @@ def create_domain_enriched_request_knowledge(
 
     Args:
         user_intent: Classified intent
-        part_families: Part families involved
+        entities: Entities involved (modalities, etc.)
         metrics: Metrics requested
         dimensions: Dimensions for breakdown
         cube_recommendation: Recommended cube
@@ -205,7 +205,7 @@ def create_domain_enriched_request_knowledge(
     """
     return DomainEnrichedRequestKnowledge(
         user_intent=user_intent,
-        part_families=part_families,
+        entities=entities,
         metrics=metrics,
         dimensions=dimensions,
         cube_recommendation=cube_recommendation,
