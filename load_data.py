@@ -12,9 +12,11 @@ DB_USER = "warehouse_user"
 DB_PASS = "warehouse_pass"
 
 # CSV file paths
-CSV_SHEET1 = r"D:\praval_mds_analytics\data\Data_Example - Sheet1.csv"
-CSV_SHEET2 = r"D:\praval_mds_analytics\data\Data_Example - Sheet2.csv"
-CSV_SHEET3 = r"D:\praval_mds_analytics\data\Data_Example - Sheet3.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+CSV_SHEET1 = os.path.join(DATA_DIR, "Data_Example - Sheet1.csv")
+CSV_SHEET2 = os.path.join(DATA_DIR, "Data_Example - Sheet2.csv")
+CSV_SHEET3 = os.path.join(DATA_DIR, "Data_Example - Sheet3.csv")
 
 def parse_datetime(value):
     """Parse datetime from various formats."""

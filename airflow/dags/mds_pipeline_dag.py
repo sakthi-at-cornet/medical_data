@@ -71,14 +71,15 @@ dag = DAG(
     tags=['medical', 'radiology', 'el', 'dbt'],
 )
 
-# Task 1: Extract and Load from source databases
+# Task 1: Load CSV Data to Warehouse
 el_pipeline_task = BashOperator(
-    task_id='run_el_pipeline',
+    task_id='load_medical_data',
     bash_command="""
     cd /opt/airflow/project && \
-    python3 -m pip install --quiet psycopg2-binary pydantic rich > /dev/null 2>&1 && \
-    cp .env.docker .env.el && \
-    python3 run_el_pipeline.py sync
+    python3 -m pip install --quiet psycopg2-binary > /dev/null 2>&1 && \
+    export DB_HOST=postgres-warehouse && \
+    export DB_PORT=5432 && \
+    python3 load_data.py
     """,
     dag=dag,
 )

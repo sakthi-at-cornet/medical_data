@@ -1,9 +1,10 @@
 """
 Visualization Specialist Agent.
 
-Data visualization expert with manufacturing dashboard experience.
+Data visualization expert with medical radiology audit experience.
 Determines appropriate chart types and generates Chart.js specifications.
 """
+
 import json
 import logging
 from typing import Dict, List, Any, Optional
@@ -59,17 +60,17 @@ class VisualizationSpecialistAgent:
         # Build data summary for LLM
         data_summary = self._summarize_for_chart_selection(data, measures, dimensions, metadata)
 
-        prompt = f"""You are a data visualization expert. Select the most appropriate chart type for manufacturing dashboard.
+        prompt = f"""You are a data visualization expert. Select the most appropriate chart type for a medical radiology audit dashboard.
 
 Data Characteristics:
 {data_summary}
 
 Available Chart Types:
-- kpi: Single metric display (best for 1 value, e.g., "Overall OEE: 85%")
-- bar: Simple bar chart (best for comparing 2-10 categories)
-- grouped_bar: Grouped/stacked bars (best for multi-dimensional comparisons, e.g., defects by part and type)
-- line: Line chart (best for time series trends)
-- table: Data table (best for >15 rows or complex multi-column data)
+- kpi: Single metric display (best for 1 value, e.g., "Average Quality Score: 4.8")
+- bar: Simple bar chart (best for comparing 2-10 categories, e.g., modalities like CT, MRI)
+- grouped_bar: Grouped/stacked bars (best for multi-dimensional comparisons, e.g., scores by modality and radiologist)
+- line: Line chart (best for time series trends, e.g., monthly quality trends)
+- table: Data table (best for >15 rows or complex multi-column data like detailed audit logs)
 
 Respond with JSON:
 {{
@@ -79,7 +80,7 @@ Respond with JSON:
 
 Guidelines:
 - KPI cards are only for single aggregate metrics
-- Bar charts work best for comparing entities (parts, lines, defects)
+- Bar charts work best for comparing categorical entities (modalities, body parts, radiologists)
 - Grouped bars shine when comparing across 2 dimensions
 - Line charts are for temporal trends
 - Tables handle complexity and large datasets"""
@@ -485,8 +486,10 @@ Guidelines:
         # Handle common abbreviations
         replacements = {
             "avg": "Average",
-            "oee": "OEE",
+            "tat": "TAT",
             "pct": "%",
+            "q1": "Q1",
+            "q2": "Q2", 
         }
 
         label = key
@@ -514,11 +517,14 @@ Guidelines:
         """Determine format type for measure."""
         key_lower = key.lower()
 
-        if "rate" in key_lower or "oee" in key_lower or "pct" in key_lower or "yield" in key_lower:
+        if "rate" in key_lower or "pct" in key_lower or "percentage" in key_lower:
             return "percent"
 
         if "cost" in key_lower:
             return "currency"
+            
+        if "score" in key_lower or "tat" in key_lower:
+            return "number"
 
         if "time" in key_lower:
             return "time"
@@ -530,7 +536,7 @@ Guidelines:
 @agent(
     "visualization_specialist",
     responds_to=["data_ready"],
-    system_message="You are a data visualization expert with manufacturing dashboard experience.",
+    system_message="You are a data visualization expert with medical radiology audit experience.",
     auto_broadcast=False  # We manually broadcast chart_ready
 )
 def visualization_specialist_handler(spore: Spore):
