@@ -9,97 +9,16 @@ import logging
 import time
 from typing import Dict, List, Any
 from praval import agent, broadcast, Spore
-from models import CubeQuery
+from schemas.models import CubeQuery
 from cubejs_client import cubejs_client
 from openai import AsyncOpenAI
 from config import settings
 from async_utils import run_async
+from schemas.radiology import METRIC_MAPPING, DIMENSION_MAPPING
 
 logger = logging.getLogger(__name__)
 
-# Metric to Cube.js measure mapping by cube
-METRIC_MAPPING = {
-    # Medical Radiology Audits Cube
-    "RadiologyAudits": {
-        "count": "RadiologyAudits.count",
-        "avgQualityScore": "RadiologyAudits.avgQualityScore",
-        "quality_score": "RadiologyAudits.avgQualityScore",
-        "quality": "RadiologyAudits.avgQualityScore",
-        "avgSafetyScore": "RadiologyAudits.avgSafetyScore",
-        "safety_score": "RadiologyAudits.avgSafetyScore",
-        "safety": "RadiologyAudits.avgSafetyScore",
-        "avgProductivityScore": "RadiologyAudits.avgProductivityScore",
-        "productivity_score": "RadiologyAudits.avgProductivityScore",
-        "productivity": "RadiologyAudits.avgProductivityScore",
-        "avgEfficiencyScore": "RadiologyAudits.avgEfficiencyScore",
-        "efficiency_score": "RadiologyAudits.avgEfficiencyScore",
-        "efficiency": "RadiologyAudits.avgEfficiencyScore",
-        "avgStarScore": "RadiologyAudits.avgStarScore",
-        "star_score": "RadiologyAudits.avgStarScore",
-        "avgStarRating": "RadiologyAudits.avgStarRating",
-        "star_rating": "RadiologyAudits.avgStarRating",
-        "stars": "RadiologyAudits.avgStarRating",
-        "cat5Count": "RadiologyAudits.cat5Count",
-        "cat5": "RadiologyAudits.cat5Count",
-        "cat4Count": "RadiologyAudits.cat4Count",
-        "cat4": "RadiologyAudits.cat4Count",
-        "cat3Count": "RadiologyAudits.cat3Count",
-        "cat3": "RadiologyAudits.cat3Count",
-        "cat2Count": "RadiologyAudits.cat2Count",
-        "cat2": "RadiologyAudits.cat2Count",
-        "cat1Count": "RadiologyAudits.cat1Count",
-        "cat1": "RadiologyAudits.cat1Count",
-        "highQualityRate": "RadiologyAudits.highQualityRate",
-        "high_quality_rate": "RadiologyAudits.highQualityRate",
-        "reauditCount": "RadiologyAudits.reauditCount",
-        "reaudit_count": "RadiologyAudits.reauditCount",
-        "avgAge": "RadiologyAudits.avgAge",
-        "avg_age": "RadiologyAudits.avgAge",
-        "avg_age": "RadiologyAudits.avgAge",
-    },
-}
 
-# Dimension mapping by cube
-DIMENSION_MAPPING = {
-    # Medical Radiology Audits Cube
-    "RadiologyAudits": {
-        "modality": "RadiologyAudits.modality",
-        "sub_specialty": "RadiologyAudits.subSpecialty",
-        "subSpecialty": "RadiologyAudits.subSpecialty",
-        "subspecialty": "RadiologyAudits.subSpecialty",
-        "body_part_category": "RadiologyAudits.bodyPartCategory",
-        "bodyPartCategory": "RadiologyAudits.bodyPartCategory",
-        "body_part": "RadiologyAudits.bodyPartCategory",
-        "bodyPart": "RadiologyAudits.bodyPart",
-        "original_radiologist": "RadiologyAudits.originalRadiologist",
-        "originalRadiologist": "RadiologyAudits.originalRadiologist",
-        "radiologist": "RadiologyAudits.originalRadiologist",
-        "reviewer": "RadiologyAudits.reviewer",
-        "review_radiologist": "RadiologyAudits.reviewer",
-        "final_output": "RadiologyAudits.finalOutput",
-        "finalOutput": "RadiologyAudits.finalOutput",
-        "cat_rating": "RadiologyAudits.finalOutput",
-        "cat": "RadiologyAudits.finalOutput",
-        "star_rating": "RadiologyAudits.starRating",
-        "starRating": "RadiologyAudits.starRating",
-        "star": "RadiologyAudits.starRating",
-        "gender": "RadiologyAudits.gender",
-        "age": "RadiologyAudits.age",
-        "age_cohort": "RadiologyAudits.ageCohort",
-        "ageCohort": "RadiologyAudits.ageCohort",
-        "scan_type": "RadiologyAudits.scanType",
-        "scanType": "RadiologyAudits.scanType",
-        "institute_name": "RadiologyAudits.instituteName",
-        "instituteName": "RadiologyAudits.instituteName",
-        "unit_identifier": "RadiologyAudits.unitIdentifier",
-        "unitIdentifier": "RadiologyAudits.unitIdentifier",
-        "second_review": "RadiologyAudits.secondReview",
-        "secondReview": "RadiologyAudits.secondReview",
-        "required_reaudit": "RadiologyAudits.requiredReaudit",
-        "requiredReaudit": "RadiologyAudits.requiredReaudit",
-        "requiredReaudit": "RadiologyAudits.requiredReaudit",
-    },
-}
 
 
 class AnalyticsSpecialistAgent:
@@ -183,7 +102,27 @@ class AnalyticsSpecialistAgent:
 
         # Add custom filters from enriched request
         for key, value in filters_dict.items():
+            # Try to find the dimension in the mapping
             mapped_dim = dimension_map.get(key)
+            
+            # If not found, try the key directly with cube prefix (fallback)
+            if not mapped_dim:
+                # Try common variations
+                possible_keys = [key, key.lower(), f"{cube_name}.{key}"]
+                for pk in possible_keys:
+                    if pk in dimension_map:
+                        mapped_dim = dimension_map[pk]
+                        break
+                    # Also check if it looks like a full cube.dimension path
+                    if pk.startswith(f"{cube_name}."):
+                        mapped_dim = pk
+                        break
+                
+                # Last resort: construct the dimension path
+                if not mapped_dim:
+                    mapped_dim = f"{cube_name}.{key}"
+                    logger.warning(f"Filter dimension '{key}' not in mapping, using '{mapped_dim}'")
+            
             if mapped_dim:
                 # Handle advanced operator format: {"operator": "lt", "value": 25}
                 if isinstance(value, dict) and "operator" in value:
@@ -210,8 +149,11 @@ class AnalyticsSpecialistAgent:
         # Build time dimensions if time_range provided
         time_dimensions = []
         if time_range:
-            # Assume PressOperations uses productionDate
-            time_dim = f"{cube_name}.productionDate"
+            # Use appropriate time dimension based on cube
+            if cube_name == "RadiologyAudits":
+                time_dim = f"{cube_name}.reportDateTime"
+            else:
+                time_dim = f"{cube_name}.productionDate"
             time_dimensions.append({
                 "dimension": time_dim,
                 "dateRange": [time_range.get("start"), time_range.get("end")]

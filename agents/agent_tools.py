@@ -297,7 +297,7 @@ class MedicalCalculatorTools:
 # Tool registry for easy access
 # Tool registry for easy access
 TOOL_REGISTRY = {
-    "domain_expert": {
+    "expert": {
         "medical_glossary": RadiologyTools.medical_glossary,
     },
     "quality_inspector": {

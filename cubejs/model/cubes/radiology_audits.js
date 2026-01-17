@@ -121,7 +121,36 @@ cube(`RadiologyAudits`, {
         avgQ5: { type: `avg`, sql: `q5`, title: 'Avg Q5 - Extra Images' },
         avgQ11: { type: `avg`, sql: `q11`, title: 'Avg Q11 - Differential Diagnosis' },
         avgQ16: { type: `avg`, sql: `q16`, title: 'Avg Q16 - Language Errors' },
-        avgQ17: { type: `avg`, sql: `q17`, title: 'Avg Q17 - Final CAT Score' }
+        avgQ17: { type: `avg`, sql: `q17`, title: 'Avg Q17 - Final CAT Score' },
+
+        // Conditional counts for advanced filtering
+        highSafetyCount: {
+            type: `count`,
+            sql: `case_id`,
+            title: 'Cases with Safety Score > 80',
+            filters: [{ sql: `${CUBE}.safety_score > 80` }]
+        },
+
+        highQualityCount: {
+            type: `count`,
+            sql: `case_id`,
+            title: 'Cases with Quality Score > 70',
+            filters: [{ sql: `${CUBE}.quality_score > 70` }]
+        },
+
+        lowQualityCount: {
+            type: `count`,
+            sql: `case_id`,
+            title: 'Cases with Quality Score < 60',
+            filters: [{ sql: `${CUBE}.quality_score < 60` }]
+        },
+
+        highSafetyRate: {
+            type: `number`,
+            sql: `ROUND(COUNT(CASE WHEN ${CUBE}.safety_score > 80 THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0), 1)`,
+            title: 'High Safety Rate (%)',
+            description: 'Percentage of cases with safety score above 80'
+        }
     },
 
     dimensions: {
@@ -303,5 +332,5 @@ cube(`RadiologyAudits`, {
         }
     },
 
-    
+
 });

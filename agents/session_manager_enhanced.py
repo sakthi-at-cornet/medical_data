@@ -3,7 +3,7 @@ import uuid
 import json
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
-from models import ChatMessage
+from schemas.models import ChatMessage
 from config import settings
 from database import db
 import logging

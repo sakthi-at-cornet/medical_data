@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 from openai import AsyncOpenAI
-from models import ChatMessage
+from schemas.models import ChatMessage, ChatResponse, ChatRequesttings
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -13,8 +13,11 @@ class ChatAgent:
 
     def __init__(self):
         """Initialize the Chat Agent."""
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self.model = settings.openai_model
+        self.client = AsyncOpenAI(
+            api_key=settings.groq_api_key,
+            base_url=settings.groq_base_url
+        )
+        self.model = settings.groq_model
 
     def build_context_string(self, messages: list[ChatMessage]) -> str:
         """Build a context string from recent messages."""
@@ -85,7 +88,14 @@ Messages NOT requiring data queries (respond conversationally):
         context: str = ""
     ) -> str:
         """Generate a conversational response without data query."""
-        system_prompt = """You are a helpful assistant for a medical radiology audit analytics system.
+        # Import schema dynamically to avoid hardcoding
+        from schemas.radiology import RADIOLOGY_SCHEMA_DICT
+        
+        # Build dynamic dimension and metric lists
+        dimensions_list = ", ".join(list(RADIOLOGY_SCHEMA_DICT.get("dimensions", {}).keys())[:10])
+        metrics_list = ", ".join(list(RADIOLOGY_SCHEMA_DICT.get("measures", {}).keys())[:10])
+        
+        system_prompt = f"""You are a helpful assistant for a medical radiology audit analytics system.
 
 Medical Radiology Context:
 - Modalities: CT, MRI
@@ -98,12 +108,12 @@ Medical Radiology Context:
   - CAT5: Severe discrepancy (critical impact)
 - Goals: Monitor diagnostic quality, improve patient safety, optimize radiologist performance
 
-Available Data:
-- 448 Audit Cases
-- Dimensions: Radiologist, Institute, Body Part Category, Age Cohort, Gender, Scan Type
-- Metrics: Avg Quality Score, Count of CAT ratings, Audits per Radiologist
+Available Data Schema:
+- Dimensions (for grouping/filtering): {dimensions_list}, and more...
+- Metrics (for calculations): {metrics_list}, and more...
 
 When users ask meta-questions like "What data?", explain these metrics and the medical context clearly.
+Query the database to get actual counts - do not assume specific numbers.
 
 Example questions to suggest:
 - "What is the average quality score by modality?"

@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime, timedelta
 from typing import Optional
-from models import ChatMessage
+from schemas.models import ChatMessage
 from config import settings
 
 

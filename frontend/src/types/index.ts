@@ -9,12 +9,13 @@ export interface ChatMessage {
 }
 
 export interface ChartData {
-  chart_type: 'bar' | 'line' | 'table';
+  chart_type: 'bar' | 'line' | 'table' | 'donut' | 'gauge' | 'grouped_bar' | 'kpi';
   data: Array<Record<string, any>> | { labels: string[]; datasets: any[] };
   x_axis?: string;
   y_axis?: string;
   title?: string;
   options?: any; // Chart.js options from backend
+  centerValue?: number; // For gauge charts
 }
 
 export interface ChatResponse {

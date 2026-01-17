@@ -42,10 +42,13 @@ export const LeftSidebar: React.FC = () => {
       setAgentsError(null);
       try {
         const response = await api.getAgents();
-        setAgents(response.agents);
+        // Defensive check: ensure agents is an array
+        const agentsList = Array.isArray(response?.agents) ? response.agents : [];
+        setAgents(agentsList);
       } catch (error) {
         console.error('Failed to fetch agents:', error);
         setAgentsError('Failed to load agents');
+        setAgents([]); // Reset to empty array on error
       } finally {
         setIsLoadingAgents(false);
       }

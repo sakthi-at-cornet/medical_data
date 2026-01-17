@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Optional
 import httpx
-from models import CubeQuery
+from schemas.models import CubeQuery
 from config import settings
 
 logger = logging.getLogger(__name__)

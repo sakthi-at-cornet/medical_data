@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Any, Optional
 from openai import AsyncOpenAI
-from models import CubeQuery, ChartData
+from schemas.models import CubeQuery, ChartData
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -14,46 +14,22 @@ class DataAnalystAgent:
 
     def __init__(self):
         """Initialize the Data Analyst Agent."""
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self.model = settings.openai_model
+        self.client = AsyncOpenAI(
+            api_key=settings.groq_api_key,
+            base_url=settings.groq_base_url
+        )
+        self.model = settings.groq_model
 
-        # Domain knowledge: Available cubes and their measures/dimensions
-        self.schema_context = """
+        # Import schema dynamically from centralized definition
+        from schemas.radiology import RADIOLOGY_DATA_SCHEMA
+        
+        # Use the dynamically generated schema context
+        self.schema_context = f"""
 Medical Radiology Analytics Schema:
 
-1. RadiologyAudits Cube (fact_radiology_audits):
-   - Measures: 
-     * count: Total number of audits
-     * avgQualityScore: Average Quality Score (0-100)
-     * avgSafetyScore: Average Safety Score (0-100)
-     * avgProductivityScore: Average Productivity Score
-     * avgEfficiencyScore: Average Efficiency Score
-     * avgStarScore: Average Star Score
-     * avgStarRating: Average Star Rating (1-5)
-     * cat5Count: Count of CAT5 (Severe) cases
-     * cat4Count: Count of CAT4 (Major) cases
-     * cat3Count: Count of CAT3 (Moderate) cases
-     * cat2Count: Count of CAT2 (Minor) cases
-     * cat1Count: Count of CAT1 (Good) cases
-     * avgAge: Average patient age
-   
-   - Dimensions: 
-     * modality: CT, MRI
-     * subSpecialty: Neuroradiology, MSK, Body, etc.
-     * bodyPartCategory: Brain, Spine, Chest, Abdomen, etc.
-     * bodyPart: Specific body part
-     * originalRadiologist: Name of reporting radiologist
-     * reviewer: Name of reviewing radiologist
-     * finalOutput: CAT1, CAT2, CAT3, CAT4, CAT5
-     * starRating: 1, 2, 3, 4, 5
-     * gender: Male, Female
-     * ageCohort: Adult, Pediatric, Geriatric
-     * scanType: Specific type of scan
-     * instituteName: Name of the hospital/clinic
-     * scanDate: Date of scan
-     * reportDate: Date of report
+{RADIOLOGY_DATA_SCHEMA}
 
-   - Use for: Quality analysis, radiologist performance (scores, TAT), modality comparisons, demographic analysis
+Use for: Quality analysis, radiologist performance (scores, TAT), modality comparisons, demographic analysis
 """
 
     async def translate_to_query(self, user_question: str, context: str = "") -> tuple[CubeQuery, str]:
@@ -154,8 +130,8 @@ Generate the Cube.js query and chart type."""
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=settings.openai_temperature,
-                max_tokens=settings.openai_max_tokens,
+                temperature=settings.groq_temperature,
+                max_tokens=settings.groq_max_tokens,
                 response_format={"type": "json_object"}
             )
 

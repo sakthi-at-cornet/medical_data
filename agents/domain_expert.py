@@ -11,6 +11,7 @@ from praval import agent, broadcast, Spore
 from openai import AsyncOpenAI
 from config import settings
 from async_utils import run_async
+from schemas.radiology import RADIOLOGY_DATA_SCHEMA
 
 logger = logging.getLogger(__name__)
 
@@ -44,79 +45,55 @@ class DomainExpertAgent:
         Returns:
             domain_enriched_request knowledge payload
         """
-        prompt = f"""You are a medical radiology domain expert. Analyze this query and generate a structured analytical request.
+        prompt = f"""You are an intelligent analytics assistant for a medical radiology audit system. Your job is to understand user questions and map them to the correct data query.
 
-User Query: "{message}"
+USER QUESTION: "{message}"
 
-Available Data Schema:
+AVAILABLE DATA SCHEMA:
+{RADIOLOGY_DATA_SCHEMA}
 
-Cube: RadiologyAudits (448 total audit records with patient demographics and quality scores)
+COMMON TERM MAPPINGS:
+- "doctor", "radiologist", "physician", "RAD" → dimension "originalRadiologist"
+- "hospital", "location", "unit", "center" → dimension "unitIdentifier" 
+- "body part", "anatomy" → dimension "bodyPartCategory"
+- "modality", "scan type" → dimension "modality"
+- "CAT", "rating", "category" → dimension "finalOutput"
+- "gender", "male", "female" → dimension "gender"
 
-Dimensions (group by / filter):
-- modality: "CT" or "MRI" (imaging type)
-- subSpecialty: Neuroradiology, Musculoskeletal, GI, etc.
-- bodyPartCategory: "NEURO", "ABDOMEN/PELVIS", "SPINE", "MSK", "HEAD AND NECK", "CHEST", etc.
-- bodyPart: Specific body parts like "Brain", "Pelvis", "Spine", etc.
-- originalRadiologist: Name of reporting radiologist
-- reviewer: Name of reviewing radiologist
-- finalOutput: CAT rating ("CAT1", "CAT2", "CAT3", "CAT4", "CAT5")
-- starRating: Star rating (1-5)
-- gender: "Male" or "Female" (patient gender)
-- ageCohort: Age group like "Adult", "Pediatric", "Geriatric"
-- age: Patient age (numeric, use for filtering like age < 25, age > 60)
-- scanType: Type of scan
-- instituteName: Hospital/clinic name
+SPECIAL METRICS FOR CONDITIONS:
+- "safety score above 80", "high safety" → use metric "highSafetyCount" (counts cases with safety > 80)
+- "quality score above 70" → use metric "highQualityCount" (counts cases with quality > 70)
+- "quality score below 60", "low quality" → use metric "lowQualityCount"
+- "percentage with high safety" → use metric "highSafetyRate"
 
-Measures (metrics to calculate):
-- count: Total number of audits/patients
-- avgQualityScore: Average quality score (typically 0-100)
-- avgSafetyScore: Average safety score (typically 0-100)
-- avgProductivityScore: Average productivity score
-- avgEfficiencyScore: Average efficiency score
-- avgStarRating: Average star rating (1-5)
-- cat5Count, cat4Count, cat3Count, cat2Count, cat1Count: Count by CAT rating
-- avgAge: Average patient age
+QUERY PATTERNS:
+1. "top/best [entity]" → dimensions: [entity], metrics: ["count", "avgQualityScore"]
+2. "[entity] with high safety / safety above 80" → dimensions: [entity], metrics: ["count", "highSafetyCount", "avgSafetyScore"]
+3. "highest volume with safety above 80" → dimensions: [entity], metrics: ["count", "highSafetyCount"]
+4. "distribution of [entity]" → dimensions: [entity], metrics: ["count"]
+5. "compare [entity]" → dimensions: [entity], metrics: ["count", "avgQualityScore"]
 
 IMPORTANT RULES:
-1. For radiology/medical audit/patient data questions, set is_rejected=false
-2. For completely unrelated questions (weather, sports, etc.), set is_rejected=true
-3. Always use "RadiologyAudits" as the cube
-4. For age-related filters like "under 25", "less than 25", "below 25":
-   - Use filters with "age" dimension and "lt" (less than) operator
-5. For gender questions: use dimension "gender"
-6. For "how many" or counting questions: use metric "count"
+- ALWAYS include "count" as a metric
+- For "safety score above 80", use the "highSafetyCount" metric, NOT a filter
+- For performance questions, include both "count" and relevant avg score
+- "radiologists with highest volume AND safety above 80" = dimensions: ["originalRadiologist"], metrics: ["count", "highSafetyCount", "avgSafetyScore"]
 
-FILTER OPERATORS:
-- "lt": less than (e.g., age < 25)
-- "gt": greater than (e.g., age > 60)
-- "lte": less than or equal
-- "gte": greater than or equal
-- "equals": exact match
-
-Respond with JSON:
+OUTPUT FORMAT (JSON only):
 {{
     "is_rejected": false,
     "rejection_reason": null,
     "cube_recommendation": "RadiologyAudits",
-    "metrics": ["count"],
+    "metrics": ["count", "avgSafetyScore"],
     "dimensions": [],
-    "filters": {{"age": {{"operator": "lt", "value": 25}}}},
+    "filters": {{}},
     "time_range": null,
     "analysis_type": "summary",
     "user_message": "{message}"
 }}
 
-Example mappings:
-- "How many patients under 25?" → metrics: ["count"], dimensions: [], filters: {{"age": {{"operator": "lt", "value": 25}}}}
-- "How many patients age less than 25?" → metrics: ["count"], dimensions: [], filters: {{"age": {{"operator": "lt", "value": 25}}}}
-- "Patients over 60" → metrics: ["count"], dimensions: ["ageCohort"], filters: {{"age": {{"operator": "gt", "value": 60}}}}
-- "Compare quality scores between CT and MRI" → metrics: ["avgQualityScore"], dimensions: ["modality"], filters: {{}}
-- "Show CAT rating distribution" → metrics: ["count"], dimensions: ["finalOutput"], filters: {{}}
-- "Male vs female patients" → metrics: ["count"], dimensions: ["gender"], filters: {{}}
-- "Total audit count" → metrics: ["count"], dimensions: [], filters: {{}}
-- "Average age of patients" → metrics: ["avgAge"], dimensions: [], filters: {{}}
-- "Quality by body part" → metrics: ["avgQualityScore"], dimensions: ["bodyPartCategory"], filters: {{}}
-"""
+Output ONLY the JSON response."""
+
 
         try:
             response = await self.client.chat.completions.create(
@@ -127,8 +104,84 @@ Example mappings:
             )
             
             result = json.loads(response.choices[0].message.content)
-            logger.info(f"Domain analysis result: cube={result.get('cube_recommendation')}, "
-                       f"metrics={result.get('metrics')}, dimensions={result.get('dimensions')}")
+            
+            # Validate and normalize dimensions - these are the valid dimension names
+            valid_dimensions = {
+                "caseId", "srNo", "modality", "subSpecialty", "bodyPartCategory", 
+                "bodyPart", "studyDescription", "scanType", "instituteName", 
+                "unitIdentifier", "originalRadiologist", "reviewer", "secondReview",
+                "finalOutput", "starRating", "gender", "ageCohort", "age",
+                "unableToAudit", "requiredReaudit", "comments", "reportDate",
+                "scanDate", "uploadDate", "assignDate", "reviewDate"
+            }
+            
+            # Normalize common dimension variations
+            dimension_aliases = {
+                "cat_rating": "finalOutput", "cat": "finalOutput", "catRating": "finalOutput",
+                "quality_category": "finalOutput", "peerReviewCategory": "finalOutput",
+                "body_part": "bodyPart", "body_part_category": "bodyPartCategory",
+                "sub_specialty": "subSpecialty", "subspecialty": "subSpecialty",
+                "radiologist": "originalRadiologist", "original_radiologist": "originalRadiologist",
+                "institute": "instituteName", "hospital": "instituteName",
+                "age_cohort": "ageCohort", "ageGroup": "ageCohort", "age_group": "ageCohort",
+                "star": "starRating", "stars": "starRating",
+                "scan_type": "scanType", "imaging_type": "modality",
+                "sex": "gender", "patient_gender": "gender",
+            }
+            
+            # Validate and fix dimensions
+            raw_dimensions = result.get("dimensions", [])
+            validated_dimensions = []
+            for dim in raw_dimensions:
+                if dim in valid_dimensions:
+                    validated_dimensions.append(dim)
+                elif dim in dimension_aliases:
+                    validated_dimensions.append(dimension_aliases[dim])
+                    logger.info(f"Normalized dimension '{dim}' → '{dimension_aliases[dim]}'")
+                else:
+                    logger.warning(f"Unknown dimension '{dim}' from LLM, skipping")
+            
+            # Validate and normalize metrics
+            valid_metrics = {
+                "count", "avgQualityScore", "avgSafetyScore", "avgProductivityScore",
+                "avgEfficiencyScore", "avgStarScore", "avgStarRating", "avgAge",
+                "avgAssignTat", "avgReviewTat", "cat1Count", "cat2Count", "cat3Count",
+                "cat4Count", "cat5Count", "highQualityRate", "reauditCount",
+                "avgQ1", "avgQ2", "avgQ3", "avgQ4", "avgQ5", "avgQ6", "avgQ7",
+                "avgQ8", "avgQ9", "avgQ10", "avgQ11", "avgQ12Q", "avgQ12S",
+                "avgQ13", "avgQ14", "avgQ15", "avgQ16", "avgQ17"
+            }
+            
+            metric_aliases = {
+                "total": "count", "cases": "count", "number": "count",
+                "quality_score": "avgQualityScore", "quality": "avgQualityScore",
+                "safety_score": "avgSafetyScore", "safety": "avgSafetyScore",
+                "productivity_score": "avgProductivityScore", "productivity": "avgProductivityScore",
+                "efficiency_score": "avgEfficiencyScore", "efficiency": "avgEfficiencyScore",
+                "star_rating": "avgStarRating", "stars": "avgStarRating",
+                "avg_age": "avgAge", "average_age": "avgAge",
+            }
+            
+            raw_metrics = result.get("metrics", ["count"])
+            validated_metrics = []
+            for metric in raw_metrics:
+                if metric in valid_metrics:
+                    validated_metrics.append(metric)
+                elif metric in metric_aliases:
+                    validated_metrics.append(metric_aliases[metric])
+                    logger.info(f"Normalized metric '{metric}' → '{metric_aliases[metric]}'")
+                else:
+                    logger.warning(f"Unknown metric '{metric}' from LLM, defaulting to 'count'")
+                    if "count" not in validated_metrics:
+                        validated_metrics.append("count")
+            
+            # Ensure at least one metric
+            if not validated_metrics:
+                validated_metrics = ["count"]
+            
+            logger.info(f"Domain analysis: query='{message[:50]}...', "
+                       f"metrics={validated_metrics}, dimensions={validated_dimensions}, "
+                       f"filters={result.get('filters', {})}")
             
             # Build domain_enriched_request
             enriched_request = {
@@ -136,8 +189,8 @@ Example mappings:
                 "is_rejected": result.get("is_rejected", False),
                 "rejection_reason": result.get("rejection_reason"),
                 "cube_recommendation": result.get("cube_recommendation", "RadiologyAudits"),
-                "metrics": result.get("metrics", ["count"]),
-                "dimensions": result.get("dimensions", []),
+                "metrics": validated_metrics,
+                "dimensions": validated_dimensions,
                 "filters": result.get("filters", {}),
                 "time_range": result.get("time_range"),
                 "part_families": [],  # Legacy field, kept for compatibility
@@ -183,9 +236,9 @@ def domain_expert_handler(spore: Spore):
     """
     logger.info(f"Domain Expert received spore: {spore.id}")
     
-    # Extract knowledge from spore
+    # Extract knowledge from spores
     knowledge = spore.knowledge
-    message = knowledge.get("message", "")
+    message = knowledge.get("message", "") 
     context = knowledge.get("context", [])
     session_id = knowledge.get("session_id", "")
     

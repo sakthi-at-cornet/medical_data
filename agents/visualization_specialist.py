@@ -57,6 +57,7 @@ class VisualizationSpecialistAgent:
         if row_count == 0:
             return "empty"
 
+
         # Build data summary for LLM
         data_summary = self._summarize_for_chart_selection(data, measures, dimensions, metadata)
 
@@ -70,16 +71,18 @@ Available Chart Types:
 - bar: Simple bar chart (best for comparing 2-10 categories, e.g., modalities like CT, MRI)
 - grouped_bar: Grouped/stacked bars (best for multi-dimensional comparisons, e.g., scores by modality and radiologist)
 - line: Line chart (best for time series trends, e.g., monthly quality trends)
+- donut: Donut/Pie chart (best for part-to-whole distribution of few categories, e.g., Gender M/F, CAT ratings)
 - table: Data table (best for >15 rows or complex multi-column data like detailed audit logs)
 
 Respond with JSON:
 {{
-    "chart_type": "kpi|bar|grouped_bar|line|table",
+    "chart_type": "kpi|bar|grouped_bar|line|donut|table",
     "reasoning": "brief explanation why this type fits the data"
 }}
 
 Guidelines:
-- KPI cards are only for single aggregate metrics
+- USE "kpi" for single aggregate scores like "Quality Score", "Safety Score" (1 row, 1 value).
+- USE "donut" for simple categorical distributions (Gender, Modality split, CAT ratings) with < 6 categories.
 - Bar charts work best for comparing categorical entities (modalities, body parts, radiologists)
 - Grouped bars shine when comparing across 2 dimensions
 - Line charts are for temporal trends
@@ -106,6 +109,7 @@ Guidelines:
             if row_count == 1:
                 return "kpi"
             elif row_count <= 10:
+                # If only 1 dimension and few rows, maybe Donut? Default to Bar.
                 return "bar"
             else:
                 return "table"
@@ -130,6 +134,12 @@ Guidelines:
         lines.append(f"Dimensions: {', '.join(dimensions) if dimensions else 'None'}")
         lines.append(f"Time series: {'Yes' if has_time_series else 'No'}")
         lines.append(f"Multi-dimensional: {'Yes' if has_multiple_dimensions else 'No'}")
+        
+        # Check for specific patterns
+        if "score" in (measures[0].lower() if measures else ""):
+             lines.append("Metric appears to be a Score (0-100).")
+        if "gender" in (dimensions[0].lower() if dimensions else ""):
+             lines.append("Dimension matches 'Gender'.")
 
         # Sample data
         if data:
@@ -181,8 +191,66 @@ Guidelines:
         if chart_type == "line":
             return self._generate_line_chart(data, dimensions, measures)
 
+        if chart_type == "donut":
+            return self._generate_donut_chart(data, dimensions, measures)
+
         # Default fallback
         return self._generate_table(data, dimensions, measures)
+
+    def _generate_donut_chart(self, data: List[Dict[str, Any]], dimensions: List[str], measures: List[str]) -> Dict[str, Any]:
+        """Generate donut chart specification."""
+        if not data or not dimensions or not measures:
+            return {"type": "empty", "message": "Insufficient data"}
+
+        # Get keys from first row
+        label_key = self._get_dimension_key(data[0], dimensions[0])
+        value_key = self._get_measure_key(data[0], measures[0])
+
+        # Extract labels and values
+        labels = [str(row.get(label_key, "")) for row in data]
+        values = [self._to_number(row.get(value_key)) for row in data]
+
+        # 12 distinct colors for different categories
+        colors = [
+            "rgba(255, 99, 132, 0.8)",   # Red/Pink - ABDOMEN/PELVIS
+            "rgba(54, 162, 235, 0.8)",   # Blue - CHEST
+            "rgba(255, 206, 86, 0.8)",   # Yellow - HEAD AND NECK
+            "rgba(75, 192, 192, 0.8)",   # Teal - MSK
+            "rgba(153, 102, 255, 0.8)",  # Purple - NEURO
+            "rgba(255, 159, 64, 0.8)",   # Orange - OTHER
+            "rgba(46, 204, 113, 0.8)",   # Green - SPINE
+            "rgba(142, 68, 173, 0.8)",   # Dark Purple
+            "rgba(241, 196, 15, 0.8)",   # Gold
+            "rgba(231, 76, 60, 0.8)",    # Dark Red
+            "rgba(52, 73, 94, 0.8)",     # Dark Gray
+            "rgba(26, 188, 156, 0.8)",   # Turquoise
+        ]
+
+        return {
+            "type": "donut",
+            "data": {
+                "labels": labels,
+                "datasets": [{
+                    "label": self._format_measure_label(value_key),
+                    "data": values,
+                    "backgroundColor": colors[:len(values)],
+                    "borderWidth": 1
+                }]
+            },
+            "options": {
+                "responsive": True,
+                "plugins": {
+                    "title": {
+                        "display": True,
+                        "text": f"{self._format_measure_label(value_key)} by {self._format_dimension_label(label_key)}"
+                    },
+                    "legend": {
+                        "display": True,
+                        "position": "right"
+                    }
+                }
+            }
+        }
 
     def _generate_kpi_card(self, data: List[Dict[str, Any]], measures: List[str]) -> Dict[str, Any]:
         """Generate KPI card specification for single metric."""
@@ -247,6 +315,26 @@ Guidelines:
         labels = [str(row.get(x_key, "")) for row in data]
         values = [self._to_number(row.get(y_key)) for row in data]
 
+        # 12 distinct colors for different bars
+        bar_colors = [
+            "rgba(255, 99, 132, 0.8)",   # Red/Pink
+            "rgba(54, 162, 235, 0.8)",   # Blue
+            "rgba(255, 206, 86, 0.8)",   # Yellow
+            "rgba(75, 192, 192, 0.8)",   # Teal
+            "rgba(153, 102, 255, 0.8)",  # Purple
+            "rgba(255, 159, 64, 0.8)",   # Orange
+            "rgba(46, 204, 113, 0.8)",   # Green
+            "rgba(142, 68, 173, 0.8)",   # Dark Purple
+            "rgba(241, 196, 15, 0.8)",   # Gold
+            "rgba(231, 76, 60, 0.8)",    # Dark Red
+            "rgba(52, 73, 94, 0.8)",     # Dark Gray
+            "rgba(26, 188, 156, 0.8)",   # Turquoise
+        ]
+        
+        # Assign different color to each bar
+        colors_for_bars = [bar_colors[i % len(bar_colors)] for i in range(len(values))]
+        border_colors = [c.replace("0.8", "1") for c in colors_for_bars]
+
         return {
             "type": "bar",
             "data": {
@@ -254,8 +342,8 @@ Guidelines:
                 "datasets": [{
                     "label": self._format_measure_label(y_key),
                     "data": values,
-                    "backgroundColor": "rgba(54, 162, 235, 0.6)",
-                    "borderColor": "rgba(54, 162, 235, 1)",
+                    "backgroundColor": colors_for_bars,
+                    "borderColor": border_colors,
                     "borderWidth": 1
                 }]
             },
@@ -318,12 +406,20 @@ Guidelines:
 
         # Build datasets (one per group)
         datasets = []
+        # 12 distinct colors for grouped bars
         colors = [
-            "rgba(255, 99, 132, 0.6)",
-            "rgba(54, 162, 235, 0.6)",
-            "rgba(255, 206, 86, 0.6)",
-            "rgba(75, 192, 192, 0.6)",
-            "rgba(153, 102, 255, 0.6)",
+            "rgba(255, 99, 132, 0.7)",   # Red/Pink
+            "rgba(54, 162, 235, 0.7)",   # Blue
+            "rgba(255, 206, 86, 0.7)",   # Yellow
+            "rgba(75, 192, 192, 0.7)",   # Teal
+            "rgba(153, 102, 255, 0.7)",  # Purple
+            "rgba(255, 159, 64, 0.7)",   # Orange
+            "rgba(46, 204, 113, 0.7)",   # Green
+            "rgba(142, 68, 173, 0.7)",   # Dark Purple
+            "rgba(241, 196, 15, 0.7)",   # Gold
+            "rgba(231, 76, 60, 0.7)",    # Dark Red
+            "rgba(52, 73, 94, 0.7)",     # Dark Gray
+            "rgba(26, 188, 156, 0.7)",   # Turquoise
         ]
 
         for i, group_name in enumerate(group_names_list):

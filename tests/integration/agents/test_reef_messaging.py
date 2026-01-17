@@ -9,7 +9,7 @@ from praval import Spore, broadcast, get_reef
 agents_dir = Path(__file__).parent.parent.parent.parent / "agents"
 sys.path.insert(0, str(agents_dir))
 
-from spore_schemas import (
+from schemas.spore import (
     UserQueryKnowledge,
     DomainEnrichedRequestKnowledge,
     DataReadyKnowledge,

@@ -85,7 +85,6 @@ class ReportWriterAgent:
         root_causes = insights.get("root_causes", [])
 
         # Build narrative prompt
-        # Build narrative prompt
         prompt = f"""You are a medical data analyst creating a data narrative for radiology audits.
 
 Chart Type: {chart_spec.get('type', 'unknown')}
@@ -119,7 +118,6 @@ Compose a clear, actionable narrative following this structure:
 
 Guidelines:
 - Use clear, professional medical/technical language
-- ABSOLUTELY NO manufacturing terminology (no "die wear", "press line", "material grade", "OEE", etc.)
 - Focus on: Quality Scores, Safety Scores, Turnaround Times (TAT), CAT Ratings, Radiologist Performance, Modalities
 - Start with the most important findings
 - Include context (e.g., "12% higher error rate" not just "5 errors")
@@ -251,29 +249,28 @@ Current Analysis:
 Narrative shown to user:
 {narrative}
 
-Available data includes (448 audit records):
-- Quality Scores, Safety Scores, Star Ratings (numeric metrics)
-- CAT Ratings (CAT1-CAT5 final output) - AVAILABLE
-- Modalities: CT (233), MRI (214) - AVAILABLE
-- Gender: Male (197), Female (251) - AVAILABLE
-- Body Part Category: NEURO, SPINE, ABDOMEN/PELVIS, etc. - AVAILABLE
-- Sub-specialty: Neuro, Body, MSK, etc. - AVAILABLE
-- Age: Patient ages (126 under 25, 322 over 25) - AVAILABLE
-- NOTE: Radiologist names are NOT available in this dataset
+AVAILABLE DATA DIMENSIONS (from schema):
+- Modalities: CT, MRI (imaging types)
+- Gender: Patient gender (M/F)
+- Body Part Categories: ABDOMEN/PELVIS, CHEST, HEAD AND NECK, MSK, NEURO, OTHER, SPINE
+- Sub-Specialties: Body, Cardiovascular, MSK, Multipart, Neuro, Other
+- CAT Ratings: CAT1 (Good) through CAT5 (Severe discrepancy)
+- Radiologists: Original radiologists who performed the readings
+- Reviewers: Radiologists who reviewed the cases
+- Metrics: Quality Score, Safety Score, Productivity Score, Efficiency Score, Star Rating
+- Time: Report Date, Scan Date, Review Date
 
 Generate 3 specific, actionable follow-up questions that:
 1. Drill deeper into findings (e.g., if showing modality, suggest body part breakdown)
 2. Explore related metrics (e.g., if showing quality, suggest safety score or CAT rating)
-3. Investigate demographics (e.g., compare by gender or age group)
-
-IMPORTANT: Do NOT suggest radiologist-related questions as that data is not available.
+3. Compare by other dimensions (e.g., radiologist performance, gender comparison)
 
 Respond with JSON:
 {{
     "follow_ups": ["question 1", "question 2", "question 3"]
 }}
 
-Make questions natural and specific to the current analysis."""
+Make questions natural, simple, and specific to the current analysis."""
 
         try:
             response = await self.client.chat.completions.create(
@@ -289,11 +286,11 @@ Make questions natural and specific to the current analysis."""
 
         except Exception as e:
             logger.error(f"Error generating follow-ups: {e}")
-            # Fallback to generic suggestions that work with available data
+            # Fallback to simple questions that definitely work
             return [
-                "Compare quality scores between CT and MRI",
-                "Show the CAT rating distribution",
-                "How many male vs female patients?"
+                "Show case count by modality",
+                "What is the CAT rating distribution?",
+                "Compare quality scores by body part category"
             ]
 
     def _create_fallback_narrative(

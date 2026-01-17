@@ -11,10 +11,12 @@ interface MessageWithExtras extends ChatMessageType {
 }
 
 const EXAMPLE_QUESTIONS = [
-  "Compare quality scores between CT and MRI",
-  "How many male and female patients?",
+  "How many cases by modality (CT vs MRI)?",
+  "Show case count by gender",
   "What is the CAT rating distribution?",
-  "Show quality scores by body part category",
+  "Compare quality scores by body part category",
+  "Which radiologists have the highest quality scores?",
+  "Show me the age distribution of patients",
 ];
 
 export const ChatInterface: React.FC = () => {
@@ -67,7 +69,8 @@ export const ChatInterface: React.FC = () => {
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      if (response.suggested_questions) {
+      // Defensive check: ensure suggested_questions is an array
+      if (Array.isArray(response.suggested_questions)) {
         setSuggestedQuestions(response.suggested_questions);
       }
     } catch (error) {

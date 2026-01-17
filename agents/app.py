@@ -9,14 +9,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from models import (
+from schemas.models import (
     ChatRequest,
     ChatResponse,
     ChatMessage,
     HealthResponse,
     SessionInfo,
     AgentInfo,
-    AgentListResponse
+    AgentListResponse,
+    ChartData
 )
 from cubejs_client import cubejs_client
 from session_manager import session_manager
@@ -281,14 +282,16 @@ async def chat(request: ChatRequest):
         chart_data = None
         if chart_spec:
             chart_type = chart_spec.get("type", "table")
-            if chart_type in ["bar", "line", "table"]:
+            valid_chart_types = ["bar", "line", "table", "donut", "gauge", "grouped_bar", "kpi"]
+            if chart_type in valid_chart_types:
                 chart_data = {
                     "chart_type": chart_type,
                     "data": chart_spec.get("data", {}),  # Chart.js format dict with labels/datasets
                     "options": chart_spec.get("options"),
                     "x_axis": None,
                     "y_axis": None,
-                    "title": chart_spec.get("options", {}).get("plugins", {}).get("title", {}).get("text")
+                    "title": chart_spec.get("options", {}).get("plugins", {}).get("title", {}).get("text"),
+                    "centerValue": chart_spec.get("centerValue"),  # For gauge charts
                 }
 
         # Add assistant message to session

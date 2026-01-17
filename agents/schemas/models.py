@@ -18,11 +18,13 @@ class ChatRequest(BaseModel):
 
 class ChartData(BaseModel):
     """Chart data and configuration."""
-    chart_type: Literal["bar", "line", "table"]
+    chart_type: Literal["bar", "line", "table", "donut", "gauge", "grouped_bar", "kpi"]
     data: Union[list[dict[str, Any]], dict[str, Any]]  # Chart.js format or raw data array
     x_axis: Optional[str] = None
     y_axis: Optional[str] = None
     title: Optional[str] = None
+    options: Optional[dict[str, Any]] = None
+    centerValue: Optional[float] = None
 
 
 class ChatResponse(BaseModel):

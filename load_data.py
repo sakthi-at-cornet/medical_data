@@ -111,7 +111,7 @@ def load_radiology_audits(conn):
                     parse_datetime(get_value(row, 'case_upload_date_and_time', 'Case_Upload_Date_And_Time')),
                     parse_datetime(get_value(row, 'case_assigned_dated_and_time', 'Case_Assigned_Dated_And_Time')),
                     parse_datetime(get_value(row, 'review_completed_date_and_time_1', 'Review_Completed_Date_And_Time_1')),
-                    get_value(row, 'original_radiologist_name', 'Original_Radiologist_Name').strip() or None,
+                    get_value(row, 'original_radiologist_name/identifier', 'original_radiologist_name', 'Original_Radiologist_Name').strip() or None,
                     get_value(row, 'review_radiologist_name_1', 'Review_Radiologist_Name_1').strip() or None,
                     get_value(row, 'time_of_the_day_report_generated', 'Time_Of_The_Day_Report_Generated').strip() or None,
                     get_value(row, 'unit_identifier', 'Unit_Identifier').strip() or None,
