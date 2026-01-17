@@ -7,7 +7,7 @@ const nextConfig = {
   // When deployed on Vercel with the current vercel.json configuration,
   // the frontend build is accessed via the /frontend prefix.
   // We use basePath to align Next.js routing with this rewrite.
-  basePath: process.env.VERCEL ? '/frontend' : '',
+  // basePath: process.env.VERCEL ? '/frontend' : '',
 }
 
 module.exports = nextConfig
