@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   env: {
-    NEXT_PUBLIC_API_URL: 'https://medical-data-peach.vercel.app' || 'http://localhost:8000',
+    NEXT_PUBLIC_API_URL: 'https://medical-data-q3qx.onrender.com' || 'http://localhost:8000',
   },
   // When deployed on Vercel with the current vercel.json configuration,
   // the frontend build is accessed via the /frontend prefix.
