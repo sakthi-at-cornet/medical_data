@@ -45,12 +45,6 @@ User message: "{user_message}"
 
 Respond with JSON: {{"requires_data_query": true/false, "reason": "brief explanation"}}
 
-Messages requiring data queries:
-- Specific questions about quality scores, safety scores, CAT ratings, star ratings
-- Requests for counts, averages, trends, or comparisons on medical data
-- "How many male/female?", "Average quality by modality", "Show me CAT5 distribution"
-- Analysis of radiologists, body parts, turnaround times, efficiency
-- "Who is the top radiologist?", "Compare CT vs MRI", "Show audits by time of day"
 
 Messages NOT requiring data queries (respond conversationally):
 - Meta-questions about the system: "What data is this?", "What can I ask?"

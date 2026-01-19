@@ -25,6 +25,14 @@ from session_manager import session_manager
 # Import Praval infrastructure
 from reef_config import initialize_reef, cleanup_reef
 from praval import broadcast, get_reef, get_registry
+import os
+
+# Inject OpenAI compatibility for Praval framework using Groq settings
+# This satisfies the @agent decorator's provider check without needing explicit OPENAI_API_KEY env var
+if not os.environ.get("OPENAI_API_KEY") and settings.groq_api_key:
+    os.environ["OPENAI_API_KEY"] = settings.groq_api_key
+    os.environ["OPENAI_BASE_URL"] = settings.groq_base_url
+    os.environ["OPENAI_MODEL_NAME"] = settings.groq_model
 
 # Import all Praval agents (registers them via @agent decorator)
 
