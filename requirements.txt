@@ -24,4 +24,5 @@ pydantic-settings>=2.0.0
 rich>=13.0.0
 
 # Praval framework for multi-agent orchestration
-praval>=0.7.11
+praval==0.7.20
+
